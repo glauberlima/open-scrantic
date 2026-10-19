@@ -6,8 +6,6 @@
 
 <img src="docs/images/open-scrantic-logo.png" alt="Open Scrantic — a castaway with a spyglass on a tropical island" width="240">
 
-&nbsp;
-
 [![CI](https://img.shields.io/github/actions/workflow/status/glauberlima/open-scrantic/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/glauberlima/open-scrantic/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/glauberlima/open-scrantic?style=flat-square)](https://github.com/glauberlima/open-scrantic/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
