@@ -93,7 +93,7 @@ case-insensitive.
 | ------------ | --------------------------------- |
 | `Background` | no island or ocean background     |
 | `Clouds`     | no clouds in the sky              |
-| `Waves`      | no shore waves or ocean whitecaps |
+| `Waves`      | no ocean whitecaps                |
 | `Sounds`     | sound effects muted               |
 
 Each option can also be set for one run with `--background=N`, `--clouds=N`, `--waves=N` or `--sounds=N`
