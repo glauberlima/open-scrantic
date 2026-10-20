@@ -37,6 +37,12 @@ catalog with indices); story scenes have `day` > 0 and some need a late `HHMM` (
 reproduce the original 16-bit arithmetic (wrapping `u16`/`i16`, unsigned `rand() % n`); do not
 "fix" them without checking the original semantics.
 
+## Development notes
+
+- macOS: if sound keeps playing with no `open-scrantic` process running, the host of a `.saver` preview may still
+  be alive: `legacyScreenSaver` (`pgrep -fl legacyScreenSaver`). `pkill -f legacyScreenSaver` is safe in
+  development; macOS starts it again on demand and nothing is lost.
+
 ## Architecture
 
 A longer write-up (startup, clocks, frame pipeline, story planning, scheduler) is in
