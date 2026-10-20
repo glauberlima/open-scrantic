@@ -1,0 +1,74 @@
+name: Bug report
+description: Something looks or sounds wrong compared with the original screensaver
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do not attach `SCRANTIC.SCR`, `RESOURCE.MAP` or `RESOURCE.001`: they are copyrighted.
+        Report security problems privately instead (see the security policy).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `open-scrantic --version`, or the release you downloaded.
+      placeholder: open-scrantic 0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: OS version and hardware
+      placeholder: macOS 15.2, Apple M2, 2560x1440 display
+  - type: input
+    id: flags
+    attributes:
+      label: Flags and settings used
+      description: Command-line flags, and any non-default values in `SCRANTIC.INI`.
+      placeholder: --fullscreen --soft-audio, Waves=0
+  - type: dropdown
+    id: area
+    attributes:
+      label: What is wrong?
+      options:
+        - Picture (colors, scaling, flicker, missing pixels)
+        - Sound (clicks, hiss, delay, silence)
+        - Story or scenes (wrong order, a scene never plays, a holiday)
+        - Window, fullscreen or input
+        - Crash or error message
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: If you know how the original behaves, say how you know (a video, the disassembly address).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `open-scrantic --fullscreen`
+        2. Wait for ...
+  - type: textarea
+    id: debug
+    attributes:
+      label: Debug output
+      description: |
+        For a story or scene problem, paste the output of `OPEN_SCRANTIC_DEBUG=1 open-scrantic`. It prints each
+        session's plan and the scenes that finished. Error lines starting with `warning:` or `error:` help too.
+      render: text

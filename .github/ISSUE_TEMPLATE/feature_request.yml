@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement (the original's behavior is the reference, so say how it differs)
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why?
+      description: The problem it solves, or what you saw elsewhere (for example another emulator or reimplementation).
+  - type: dropdown
+    id: fidelity
+    attributes:
+      label: Does it change what the original did?
+      description: Presentation options such as scaling or dedithering are allowed when they are off by default or documented.
+      options:
+        - No, it only changes how it is shown or heard
+        - Yes, it deviates from the original
+        - Not sure
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
