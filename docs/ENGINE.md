@@ -69,6 +69,8 @@ segments + DGROUP). Addresses are written as `segment:offset`; `DS:xxxx` is the 
   | 3  | New Year       | Dec 29-31, Jan 1 | 3                  | (0x16A, 0x9B)                   | 152 x 47    |
   | 4  | St. Patrick's  | Mar 15-17      | 1                    | (0x14E, 0x11E)                  | 128 x 48    |
 
+  ![The four holiday decorations on the island](images/holidays.png)
+
   The decoration is drawn on top of the scene (`seg3:1e50`) only when a holiday is set, `HOLIDAY.BMP` is
   loaded, `DS:30B6` is non-zero (the port clears it for scenes with the flag `0x10`) and `DS:30B4` is not 2
   (no island). The size is the rectangle the original tests against its dirty rectangles (`seg13:04b2`) to
