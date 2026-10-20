@@ -59,8 +59,23 @@ segments + DGROUP). Addresses are written as `segment:offset`; `DS:xxxx` is the 
   (random `OCEAN0x.SCR`) and 4 of night (`NIGHT.SCR`).
 - **Chapters** (11): `NumDays` advances one per calendar day, as long as the current chapter has
   already been shown; after the 11th it starts over. The raft grows with the day (5 stages).
-- **Holidays**: Halloween (Oct 29–31), Christmas (Dec 23–25), New Year (Dec 29–Jan 1),
-  St. Patrick's (Mar 15–17).
+- **Holidays**: chosen from the system date each time a session starts (`seg4:0540`, the checks at
+  `seg4:05b5..0625`), stored in `DS:30BC`:
+
+  | Id | Holiday        | Dates          | `HOLIDAY.BMP` sprite | Position from the island origin | Sprite size |
+  |----|----------------|----------------|----------------------|---------------------------------|-------------|
+  | 1  | Halloween      | Oct 29-31      | 0                    | (0x19B, 0x12A)                  | 40 x 34     |
+  | 2  | Christmas      | Dec 23-25      | 2                    | (0x195, 0x10B)                  | 56 x 65     |
+  | 3  | New Year       | Dec 29-31, Jan 1 | 3                  | (0x16A, 0x9B)                   | 152 x 47    |
+  | 4  | St. Patrick's  | Mar 15-17      | 1                    | (0x14E, 0x11E)                  | 128 x 48    |
+
+  The decoration is drawn on top of the scene (`seg3:1e50`) only when a holiday is set, `HOLIDAY.BMP` is
+  loaded, `DS:30B6` is non-zero (the port clears it for scenes with the flag `0x10`) and `DS:30B4` is not 2
+  (no island). The size is the rectangle the original tests against its dirty rectangles (`seg13:04b2`) to
+  decide whether the decoration needs redrawing; the port redraws the whole frame every step, so it does
+  not use it. These are the only dates the original reads for behavior. The other use of the date
+  (`seg4:0ba5`) only detects that the calendar day changed, which advances the story chapter: there are no
+  birthdays, weekdays or other special days.
 
 ## Walking
 
