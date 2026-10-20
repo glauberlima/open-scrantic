@@ -15,12 +15,11 @@ pub fn plain(px: &[u8], pal: &[[u8; 3]; 256]) -> Vec<u32> {
     px.iter().map(|&i| pack(pal[i as usize])).collect()
 }
 
-/// Blends two colors in linear light (gamma 2.2) so the average of a checkerboard keeps its brightness.
+/// Per-channel midpoint in the palette's own (sRGB) values. Averaging in linear light would be
+/// physically closer to what the eye sees at a distance, but it brightens saturated mixes and washes
+/// out the colors the palette was designed for.
 fn average(a: [u8; 3], b: [u8; 3]) -> [u8; 3] {
-    let mix = |x: u8, y: u8| {
-        let (x, y) = ((x as f32 / 255.0).powf(2.2), (y as f32 / 255.0).powf(2.2));
-        (((x + y) / 2.0).powf(1.0 / 2.2) * 255.0).round() as u8
-    };
+    let mix = |x: u8, y: u8| (x as u16 + y as u16).div_ceil(2) as u8;
     [mix(a[0], b[0]), mix(a[1], b[1]), mix(a[2], b[2])]
 }
 
@@ -209,6 +208,12 @@ mod tests {
         assert!(out.iter().all(|&c| c == out[0]));
         assert_ne!(out[0], pack(pal()[0]));
         assert_ne!(out[0], pack(pal()[2]));
+    }
+
+    #[test]
+    fn checkerboard_keeps_the_midpoint_of_its_colors() {
+        let out = dedither(&checker(0, 2), &pal());
+        assert_eq!(out[0], pack([0, 0, 128]));
     }
 
     #[test]
