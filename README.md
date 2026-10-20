@@ -96,6 +96,9 @@ case-insensitive.
 | `Waves`      | no shore waves or ocean whitecaps |
 | `Sounds`     | sound effects muted               |
 
+Each option can also be set for one run with `--background=N`, `--clouds=N`, `--waves=N` or `--sounds=N`
+(`N` is `0` or `1`). The command line wins over the file, and such a run never writes the value back to it.
+
 To start over, delete `SCRANTIC.INI`. If it contains an invalid value, it is replaced by the
 defaults, story progress included.
 
@@ -176,6 +179,7 @@ The screensaver files and `SCRANTIC.INI` are always read from the directory of t
 | `--fullscreen`  | start fullscreen instead of windowed                         |
 | `--dedither`    | blend the 1992 checkerboard dithering into solid colors      |
 | `--soft-audio`  | improve the sounds: resample, hide the 8-bit hiss, fade cuts |
+| `--background=N`, `--clouds=N`, `--waves=N`, `--sounds=N` | override that INI option for this run (`0` or `1`) |
 | `-V, --version` | print the version and exit                                   |
 | `-h, --help`    | print the usage and exit                                     |
 

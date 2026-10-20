@@ -22,22 +22,55 @@ use open_scrantic::{assets, audio};
 const INTRO_HOLD: Duration = Duration::from_secs(2);
 
 const USAGE: &str = "\
-Usage: open-scrantic [--fullscreen] [--dedither] [--soft-audio]
+Usage: open-scrantic [--fullscreen] [--dedither] [--soft-audio] [--background=0|1] [--clouds=0|1]
+                     [--waves=0|1] [--sounds=0|1]
 
 Options:
   --fullscreen    start fullscreen instead of in a window
   --dedither      blend the 1992 checkerboard dithering into solid colors
   --soft-audio    improve the sounds: resample to the device rate, hide the 8-bit hiss, fade cuts
+  --background=N  override Background of SCRANTIC.INI for this run (0 = off, 1 = on)
+  --clouds=N      override Clouds of SCRANTIC.INI for this run
+  --waves=N       override Waves of SCRANTIC.INI for this run
+  --sounds=N      override Sounds of SCRANTIC.INI for this run
   -V, --version   print the version and exit
   -h, --help      print this help and exit
 
 The original screensaver files (SCRANTIC.SCR, RESOURCE.MAP, RESOURCE.001) and SCRANTIC.INI are read
 from the directory of this executable. Esc exits; F12 saves a screenshot there.";
 
+/// Overrides of the INI options for this run; they are never written back to the file.
+#[derive(Default)]
+struct Overrides {
+    background: Option<bool>,
+    clouds: Option<bool>,
+    waves: Option<bool>,
+    sounds: Option<bool>,
+}
+
+impl Overrides {
+    fn apply(&self, cfg: &mut Config) {
+        cfg.background = self.background.unwrap_or(cfg.background);
+        cfg.clouds = self.clouds.unwrap_or(cfg.clouds);
+        cfg.waves = self.waves.unwrap_or(cfg.waves);
+        cfg.sounds = self.sounds.unwrap_or(cfg.sounds);
+    }
+}
+
 struct Options {
     fullscreen: bool,
     dedither: bool,
     soft_audio: bool,
+    overrides: Overrides,
+}
+
+/// `0` or `1`, as in the INI.
+fn parse_flag(name: &str, value: &str) -> Result<bool, String> {
+    match value {
+        "0" => Ok(false),
+        "1" => Ok(true),
+        _ => Err(format!("{name} takes 0 or 1, not {value:?}\n\n{USAGE}")),
+    }
 }
 
 /// Parses the command line; `Ok(None)` means a message was printed and the program should exit.
@@ -46,6 +79,7 @@ fn parse_args() -> Result<Option<Options>, String> {
         fullscreen: false,
         dedither: false,
         soft_audio: false,
+        overrides: Overrides::default(),
     };
     for a in std::env::args().skip(1) {
         match a.as_str() {
@@ -60,7 +94,13 @@ fn parse_args() -> Result<Option<Options>, String> {
                 println!("{USAGE}");
                 return Ok(None);
             }
-            _ => return Err(format!("unknown argument {a}\n\n{USAGE}")),
+            _ => match a.split_once('=') {
+                Some(("--background", v)) => o.overrides.background = Some(parse_flag("--background", v)?),
+                Some(("--clouds", v)) => o.overrides.clouds = Some(parse_flag("--clouds", v)?),
+                Some(("--waves", v)) => o.overrides.waves = Some(parse_flag("--waves", v)?),
+                Some(("--sounds", v)) => o.overrides.sounds = Some(parse_flag("--sounds", v)?),
+                _ => return Err(format!("unknown argument {a}\n\n{USAGE}")),
+            },
         }
     }
     Ok(Some(o))
@@ -76,6 +116,8 @@ struct App {
     ticks: u64,
     fullscreen: bool,
     dedither: bool,
+    /// Settings as they are in the INI, which a run with overrides must write back unchanged.
+    saved: Config,
     /// F12 was pressed; the next redraw saves the frame it draws.
     screenshot: bool,
     /// The title screen has been requested once; until the first step it needs no further redraws.
@@ -246,7 +288,14 @@ impl ApplicationHandler for App {
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        if let Err(e) = self.engine.config.save() {
+        let mut cfg = self.engine.config.clone();
+        (cfg.background, cfg.clouds, cfg.waves, cfg.sounds) = (
+            self.saved.background,
+            self.saved.clouds,
+            self.saved.waves,
+            self.saved.sounds,
+        );
+        if let Err(e) = cfg.save() {
             eprintln!("warning: cannot save settings: {e}");
         }
     }
@@ -272,7 +321,10 @@ fn main() {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let engine = Engine::new(data, Config::load(), seed).unwrap_or_else(|e| fail(e));
+    let saved = Config::load();
+    let mut config = saved.clone();
+    opts.overrides.apply(&mut config);
+    let engine = Engine::new(data, config, seed).unwrap_or_else(|e| fail(e));
     let audio = audio::Audio::new(opts.soft_audio);
     let event_loop = EventLoop::new().unwrap_or_else(|e| fail(e));
     let mut app = App {
@@ -285,10 +337,41 @@ fn main() {
         ticks: 0,
         fullscreen: opts.fullscreen,
         dedither: opts.dedither,
+        saved,
         screenshot: false,
         intro_drawn: false,
     };
     if let Err(e) = event_loop.run_app(&mut app) {
         eprintln!("error: {e}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flags_take_only_zero_or_one() {
+        assert_eq!(parse_flag("--waves", "0"), Ok(false));
+        assert_eq!(parse_flag("--waves", "1"), Ok(true));
+        assert!(
+            parse_flag("--waves", "2")
+                .unwrap_err()
+                .starts_with("--waves takes 0 or 1")
+        );
+        assert!(parse_flag("--waves", "").is_err());
+    }
+
+    #[test]
+    fn overrides_change_only_the_options_they_name() {
+        let mut cfg = Config::default();
+        assert!(cfg.background && cfg.clouds && cfg.waves && cfg.sounds);
+        Overrides {
+            waves: Some(false),
+            sounds: Some(false),
+            ..Overrides::default()
+        }
+        .apply(&mut cfg);
+        assert!(cfg.background && cfg.clouds && !cfg.waves && !cfg.sounds);
     }
 }

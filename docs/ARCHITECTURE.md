@@ -209,7 +209,10 @@ endless mono `Stream` feeds the mixer, and `Audio::play` fades the sound it cuts
 `Config` maps `[ScreenSaver.ScreenAntics]` in `SCRANTIC.INI` to fields: four options
 (`Background`, `Clouds`, `Waves`, `Sounds`) and the story state (`NumDays`, `Introduction`, the date
 of the last run, `StartTime`). Parsing is strict: any invalid value replaces the whole file with the
-defaults. The file is written once, on clean exit (`ApplicationHandler::exiting`).
+defaults. The file is written once, on clean exit (`ApplicationHandler::exiting`). The command-line options
+`--background`, `--clouds`, `--waves` and `--sounds` (`0`/`1`) override the four options for one run:
+`main.rs` keeps the settings as loaded (`App::saved`) and writes those four back, so an override is never
+persisted.
 
 ## Testing and debugging
 
