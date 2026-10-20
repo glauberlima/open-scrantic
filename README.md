@@ -2,7 +2,7 @@
 
 # 🏝️ Open Scrantic
 
-### Johnny Castaway, the classic 1992 screensaver, running natively on Windows, macOS and Linux.
+### Johnny Castaway, the classic 1992 screensaver, rewritten in Rust and running natively on Windows, macOS and Linux.
 
 <img src="docs/images/open-scrantic-logo.png" alt="Open Scrantic — a castaway with a spyglass on a tropical island" width="240">
 
@@ -160,8 +160,8 @@ RESOURCE.001 ─┴► assets::resource  ──► images, palette, TTM/ADS scri
 The disassembly is the ground truth for behavior, including the original 16-bit arithmetic and random
 number generator. Recovered formats, VM semantics, story rules, timing and the deliberate deviations
 (for example, full-frame redraw instead of dirty rectangles) are recorded in
-[`docs/ENGINE.md`](docs/ENGINE.md). The original settings dialog is not reimplemented; options live
-in [`SCRANTIC.INI`](#settings).
+[`docs/ENGINE.md`](docs/ENGINE.md); the structure is drawn in [`docs/DIAGRAMS.md`](docs/DIAGRAMS.md). The
+original settings dialog is not reimplemented; options live in [`SCRANTIC.INI`](#settings).
 
 ## For developers
 
@@ -212,21 +212,14 @@ Architecture (the full write-up, with the data flow and how a frame is produced,
 - `src/main.rs` — window (winit + softbuffer), clocks and input; `src/present.rs` — frame to window
   pixels (dedithering, scaling); `src/audio.rs` — sound (rodio).
 
-See [`AGENTS.md`](AGENTS.md) for the full architecture notes and conventions.
+See [`AGENTS.md`](AGENTS.md) for the full architecture notes and conventions, and
+[`docs/DIAGRAMS.md`](docs/DIAGRAMS.md) for the main loop and the frame pipeline drawn as diagrams.
 
 ### Contributing
 
-Run these before sending changes; warnings fail the build (`Cargo.toml` denies them):
-
-```sh
-cargo clippy --all-targets
-cargo fmt --check
-OPEN_SCRANTIC_DATA=/path/to/install cargo test
-```
-
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/). Never commit screensaver
-data. When porting more logic, cite the original address in the comment (`seg10:1acb`, `DS:1756`),
-as existing code does.
+Contributions are welcome: see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the checks to run, the commit
+convention and how to check a change against the original, and the
+[Code of Conduct](CODE_OF_CONDUCT.md). Never commit screensaver data.
 
 ### Releases
 
