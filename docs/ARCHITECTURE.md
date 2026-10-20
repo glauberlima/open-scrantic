@@ -3,7 +3,8 @@
 How Open Scrantic is put together: which module does what, how data flows from the original
 files to the screen, and how one frame is produced. For the recovered file formats, VM opcodes,
 story rules and deliberate deviations, see [`ENGINE.md`](ENGINE.md); for contributor conventions,
-see [`../AGENTS.md`](../AGENTS.md).
+see [`../AGENTS.md`](../AGENTS.md). The same structure drawn as flowcharts and sequence diagrams is in
+[`DIAGRAMS.md`](DIAGRAMS.md).
 
 ## Principles
 
