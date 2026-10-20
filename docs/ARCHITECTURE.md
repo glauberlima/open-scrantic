@@ -125,7 +125,9 @@ Each step does the following, in order:
 `Engine::frame()` returns the front canvas. `main.rs` converts it to RGB through `Engine::palette`
 (`present::plain`, or `present::dedither` with `--dedither`, which replaces each 2×2 checkerboard by
 the average of its two colors) and `present::scale` draws it into the window: it scales by
-`min(width/640, height/480)` with nearest-neighbor sampling and centers it with black bars. The
+`min(width/640, height/480)` with sharp-bilinear sampling (pixels stay solid; a pixel blends with its
+neighbor only within one screen pixel of the edge, so an integer factor is exact replication) and centers it
+with black bars. The
 initial window is the largest whole multiple of 640×480 that fits in 80% of the screen.
 
 ## Story: sessions and plans (`engine/mod.rs`)

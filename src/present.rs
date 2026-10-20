@@ -1,4 +1,4 @@
-//! Presentation of the 640x480 frame: optional dedithering and scaling to the window.
+//! Presentation of the 640x480 frame: optional dedithering and sharp-bilinear scaling to the window.
 //! Nothing here touches the engine; it only changes what reaches the screen (documented deviation).
 
 use crate::engine::gfx::{HEIGHT, WIDTH};
@@ -85,8 +85,31 @@ pub fn dedither(px: &[u8], pal: &[[u8; 3]; 256]) -> Vec<u32> {
         .collect()
 }
 
-/// Draws `src` (640x480 RGB) into `dst` (`w` x `h`) by pixel replication, as large as fits and
-/// centered, black elsewhere.
+/// Per output coordinate: source pixel, neighbor across the nearest pixel edge, neighbor weight (0..=128).
+fn sharp_axis(n_dst: usize, n_src: usize, k: f64) -> Vec<(usize, usize, u32)> {
+    (0..n_dst)
+        .map(|o| {
+            let s = (o as f64 + 0.5) / k;
+            let i = (s as usize).min(n_src - 1);
+            let f = s - i as f64;
+            let (e, j) = if f < 0.5 {
+                (f, i.saturating_sub(1))
+            } else {
+                (1.0 - f, (i + 1).min(n_src - 1))
+            };
+            (i, j, ((0.5 - e * k).clamp(0.0, 0.5) * 256.0) as u32)
+        })
+        .collect()
+}
+
+fn mix(a: u32, b: u32, w: u32) -> u32 {
+    let ch = |sh: u32| (((a >> sh & 255) * (256 - w) + (b >> sh & 255) * w) >> 8) << sh;
+    ch(16) | ch(8) | ch(0)
+}
+
+/// Draws `src` (640x480 RGB) into `dst` (`w` x `h`) as large as fits, centered, black elsewhere.
+/// Sharp-bilinear: pixels stay solid and are blended with the neighbor only within one screen pixel
+/// of an edge, so an integer factor is exact replication and a fractional one has uniform pixels.
 pub fn scale(src: &[u32], dst: &mut [u32], w: usize, h: usize) {
     dst.fill(0);
     let k = (w as f64 / W as f64).min(h as f64 / H as f64);
@@ -95,12 +118,16 @@ pub fn scale(src: &[u32], dst: &mut [u32], w: usize, h: usize) {
         return;
     }
     let (ox, oy) = ((w - dw) / 2, (h - dh) / 2);
-    let cols: Vec<usize> = (0..dw).map(|x| (x * W / dw).min(W - 1)).collect();
-    for y in 0..dh {
-        let row = &src[(y * H / dh).min(H - 1) * W..][..W];
+    let cols = sharp_axis(dw, W, k);
+    for (y, &(r0, r1, wy)) in sharp_axis(dh, H, k).iter().enumerate() {
+        let (row0, row1) = (&src[r0 * W..][..W], &src[r1 * W..][..W]);
         let out = &mut dst[(y + oy) * w + ox..][..dw];
-        for (d, &sx) in out.iter_mut().zip(&cols) {
-            *d = row[sx];
+        for (d, &(c0, c1, wx)) in out.iter_mut().zip(&cols) {
+            *d = if wx == 0 && wy == 0 {
+                row0[c0]
+            } else {
+                mix(mix(row0[c0], row0[c1], wx), mix(row1[c0], row1[c1], wx), wy)
+            };
         }
     }
 }
@@ -231,5 +258,31 @@ mod tests {
         for (w, h) in [(1, 1), (7680, 4320)] {
             scale(&rgb, &mut vec![0; w * h], w, h);
         }
+    }
+
+    fn halves() -> Vec<u32> {
+        (0..W * H)
+            .map(|i| if i % W < W / 2 { 0x000000 } else { 0xFFFFFF })
+            .collect()
+    }
+
+    #[test]
+    fn integer_factor_is_exact_replication() {
+        let src = halves();
+        let (w, h) = (W * 2, H * 2);
+        let mut dst = vec![1; w * h];
+        scale(&src, &mut dst, w, h);
+        assert!((0..h).all(|y| (0..w).all(|x| dst[y * w + x] == src[y / 2 * W + x / 2])));
+    }
+
+    #[test]
+    fn fractional_factor_blends_only_at_edges() {
+        let (w, h) = (1440, 1080); // 2.25x
+        let mut dst = vec![1; w * h];
+        scale(&halves(), &mut dst, w, h);
+        let row = &dst[540 * w..][..w];
+        assert_eq!(row[100], 0x000000);
+        assert_eq!(row[w - 100], 0xFFFFFF);
+        assert!(row.iter().filter(|&&c| c != 0 && c != 0xFFFFFF).count() <= 2);
     }
 }
