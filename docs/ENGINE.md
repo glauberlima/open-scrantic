@@ -114,7 +114,11 @@ not "fix" them:
   edge of a solid area). It only affects the pixels sent to the window; off by default.
 - Window scaling (`present::scale`, not in the original) is sharp-bilinear at the largest factor that fits, centered
   with black bars: pixels stay solid and blend with the neighbor only within one screen pixel of an edge. An
-  integer factor is exact pixel replication. Always on.
+  integer factor is exact pixel replication. Always on. The original never enlarged: it created a popup window of
+  the whole screen (`CreateWindow` at `seg1:019f`, size from `GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)`), set
+  the 640x480 canvas and presentation mode 3 in `seg1:1448`, and the draw routine (`seg8:07e8`) centers the canvas
+  at 1:1 (`(screen - canvas) / 2` added to the destination) on a black background (`WM_ERASEBKGND` fills with
+  `BLACK_BRUSH`). Its other modes only scale by 2 or 1/2, never by a fraction.
 - `--soft-audio` (`src/audio.rs`, not in the original, off by default) resamples the 11,025 Hz sounds to
   the device rate, low-passes them and fades a cut sound out over 3 ms. Which sound plays when is
   unchanged.
