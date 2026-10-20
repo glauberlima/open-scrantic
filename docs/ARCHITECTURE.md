@@ -222,8 +222,8 @@ persisted.
   anything. They load every ADS script, run the engine headless until scenes complete, and check the
   day-phase formula against the original.
 - **`examples/snapshot.rs`** runs the engine headless with a fixed clock and seed and writes PNGs.
-  It can preset the story day, the time of day and a single scene, which makes it the way to verify
-  rendering changes.
+  It can preset the story day, the time of day, the calendar day (`DATE=MMDD`, which selects the holiday
+  decoration) and a single scene, which makes it the way to verify rendering changes.
 - **`OPEN_SCRANTIC_DEBUG=1`** prints each session's plan and every finished scene.
 
 ## Porting more logic

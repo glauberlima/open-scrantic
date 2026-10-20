@@ -71,6 +71,10 @@ segments + DGROUP). Addresses are written as `segment:offset`; `DS:xxxx` is the 
 
   ![The four holiday decorations on the island](images/holidays.png)
 
+  The image was made with the snapshot example, one run per date (`DATE=1030`, `1224`, `1231`, `0316`, seed
+  12345, 30 steps, for instance `DATE=1224 cargo run --release --example snapshot -- INSTALL_DIR OUT 30 30 1000 12345`),
+  cropped to the island (x 250..640, y 140..380), scaled 2x and joined in a 2x2 sheet.
+
   The decoration is drawn on top of the scene (`seg3:1e50`) only when a holiday is set, `HOLIDAY.BMP` is
   loaded, `DS:30B6` is non-zero (the port clears it for scenes with the flag `0x10`) and `DS:30B4` is not 2
   (no island). The size is the rectangle the original tests against its dirty rectangles (`seg13:04b2`) to

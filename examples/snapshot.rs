@@ -1,6 +1,7 @@
 //! Headless run: steps the engine with a fixed wall clock and saves PNG snapshots.
 //! Usage: cargo run --example snapshot -- INSTALL_DIR OUT_DIR [STEPS] [EVERY] [HHMM] [SEED] [STORY_DAY] [SCENE|list]
-//! Environment: DEDITHER=1 blends checkerboard dithering; SIZE=WxH scales like the window.
+//! Environment: DEDITHER=1 blends checkerboard dithering; SIZE=WxH scales like the window;
+//! DATE=MMDD sets the calendar day (default 0601), which selects the holiday decoration.
 
 use std::fs;
 use std::path::Path;
@@ -43,10 +44,19 @@ fn main() {
         fail("STORY_DAY must be between 0 and 11");
     }
     fs::create_dir_all(out).unwrap();
+    let (month, day) = match std::env::var("DATE") {
+        Ok(v) => match v.parse::<i32>() {
+            Ok(n) if v.len() == 4 && (1..=12).contains(&(n / 100)) && (1..=31).contains(&(n % 100)) => {
+                (n / 100, n % 100)
+            }
+            _ => fail("DATE must be MMDD, for example 1224"),
+        },
+        Err(_) => (6, 1),
+    };
     let clock = Clock {
         year: 1993,
-        month: 6,
-        day: 1,
+        month,
+        day,
         hour: hhmm / 100,
         minute: hhmm % 100,
     };

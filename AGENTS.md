@@ -31,7 +31,8 @@ cargo run --release --example snapshot -- INSTALL_DIR OUT_DIR [STEPS] [EVERY] [H
 The `snapshot` example runs the engine headless with a fixed clock and writes PNGs; it is the way
 to verify rendering changes (e.g. `STORY_DAY` presets a story chapter, `HHMM` picks day/night). `SCENE` forces one catalog scene as the whole session (`list` prints the
 catalog with indices); story scenes have `day` > 0 and some need a late `HHMM` (their phase range).
-`DEDITHER=1` applies `--dedither` to the PNGs and `SIZE=WxH` scales them as a window of that size would.
+`DEDITHER=1` applies `--dedither` to the PNGs, `SIZE=WxH` scales them as a window of that size would and
+`DATE=MMDD` sets the calendar day (default `0601`), which selects the holiday decoration (e.g. `DATE=1224`).
 
 `clippy::pedantic` is deliberately not enabled: many `as` casts intentionally
 reproduce the original 16-bit arithmetic (wrapping `u16`/`i16`, unsigned `rand() % n`); do not
