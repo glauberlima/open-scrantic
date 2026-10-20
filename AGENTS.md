@@ -17,8 +17,6 @@ original — read it before changing engine behavior. Code comments cite origina
 
 ## Commands
 
-Toolchain is pinned to Rust 1.99.1 (`rust-toolchain.toml`), edition 2024.
-
 ```sh
 cargo build --release                                   # optimized binary: target/release/open-scrantic
 cp SCRANTIC.SCR RESOURCE.MAP RESOURCE.001 target/release/ && target/release/open-scrantic [--fullscreen] [--dedither] [--soft-audio]   # screensaver files + SCRANTIC.INI live next to the binary; Esc exits
@@ -35,8 +33,7 @@ to verify rendering changes (e.g. `STORY_DAY` presets a story chapter, `HHMM` pi
 catalog with indices); story scenes have `day` > 0 and some need a late `HHMM` (their phase range).
 `DEDITHER=1` applies `--dedither` to the PNGs and `SIZE=WxH` scales them as a window of that size would.
 
-`Cargo.toml` denies all rustc and clippy warnings (`[lints]`) and forbids `unsafe`, so any warning
-fails the build. `clippy::pedantic` is deliberately not enabled: many `as` casts intentionally
+`clippy::pedantic` is deliberately not enabled: many `as` casts intentionally
 reproduce the original 16-bit arithmetic (wrapping `u16`/`i16`, unsigned `rand() % n`); do not
 "fix" them without checking the original semantics.
 
@@ -49,24 +46,7 @@ Crate is a library (`src/lib.rs`) plus the fullscreen binary (`src/main.rs`) and
 `present.rs` (frame to window pixels, optional dedithering) and `audio.rs` (rodio, optional soft mode)
 are presentation only: neither is in the original and both default to its behavior.
 
-- **`assets/`** — `resource.rs` parses the Dynamix archive (chunked resources, RLE/LZW, 4 bpp
-  BMP/SCR, PAL, TTM split into frames at `0x0FF0`, ADS). `exe.rs` reads the NE executable: the
-  `WAVESFXn` sounds (mapped through the RT_NAMETABLE resource) and logic tables at fixed offsets in
-  the data segment (scene catalog, walk routes/paths, RNG seed table, whitecap sequences). It
-  validates known strings to reject other builds of the EXE.
-- **`engine/mod.rs` (`Engine`)** — the story driver: session planning (`plan_session`/`pick`),
-  calendar/chapter logic, and `step()`, which composes one frame. `tick()` is the separate 16 ms
-  timer. `Env` bundles everything a TTM frame may touch.
-- **`engine/ads.rs`** — ADS block-structured script VM plus the scene scheduler (`update`): every
-  step it propagates tag state to scenes, re-runs every active tag's script from the start, then
-  executes the current frame of every running scene in z-order and advances frames whose delay
-  elapsed. A tag is finished when `tag_busy` is false (self-looping scenes don't block).
-- **`engine/ttm.rs`** — scene records and `run_frame`. A frame's first execution has side effects
-  (loads, sounds, random delays); later executions of the same frame only redraw (`Scene::redraw`).
-- **`engine/island.rs`** — background composition and ambience (placement constraints, shore
-  waves, whitecaps, clouds baked into the background, raft, holiday decorations).
-  **`walk.rs`** — Johnny walking between six spots using EXE route tables.
-  **`rng.rs`** — the original additive generator; use it (not another RNG) for any randomness in the engine.
+Per-module notes: [src/assets/CLAUDE.md](src/assets/CLAUDE.md) and [src/engine/CLAUDE.md](src/engine/CLAUDE.md).
 
 Key cross-cutting model:
 - **Rendering**: three canvases — `bg` (persistent background), `work` (rebuilt from `bg` every
