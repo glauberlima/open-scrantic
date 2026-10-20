@@ -19,9 +19,13 @@ const SOFT_CUTOFF: f32 = 0.6;
 /// Zero crossings on each side of the sinc kernel.
 const LOBES: f32 = 8.0;
 const FADE_MS: u32 = 3;
-/// Device buffer in frames (about 170 ms at 48 kHz). rodio's default of 50 ms underruns on some
-/// ALSA setups (USB DACs); latency does not matter for sound effects.
-const DEVICE_BUFFER: u32 = 8192;
+/// Device buffer. On Linux a fixed 8192 frames (about 170 ms at 48 kHz): rodio's default of 50 ms
+/// underruns on some ALSA setups (USB DACs). Elsewhere the driver's own choice, so a sound is not
+/// heard a sixth of a second after the picture that caused it.
+#[cfg(target_os = "linux")]
+const DEVICE_BUFFER: BufferSize = BufferSize::Fixed(8192);
+#[cfg(not(target_os = "linux"))]
+const DEVICE_BUFFER: BufferSize = BufferSize::Default;
 
 fn sinc(x: f32) -> f32 {
     if x.abs() < 1e-6 { 1.0 } else { (PI * x).sin() / (PI * x) }
@@ -152,7 +156,7 @@ fn open(soft: bool, broken: &Arc<AtomicBool>) -> Result<(MixerDeviceSink, Mode),
     let flag = Arc::clone(broken);
     let mut sink = DeviceSinkBuilder::from_default_device()
         .and_then(|b| {
-            b.with_buffer_size(BufferSize::Fixed(DEVICE_BUFFER))
+            b.with_buffer_size(DEVICE_BUFFER)
                 .with_error_callback(move |e| {
                     // An underrun is recovered by the backend; anything else can leave the stream dead.
                     if e.kind() != CpalErrorKind::Xrun && !flag.swap(true, Ordering::Relaxed) {

@@ -114,8 +114,9 @@ not "fix" them:
 - `--soft-audio` (`src/audio.rs`, not in the original, off by default) resamples the 11,025 Hz sounds to
   the device rate, low-passes them and fades a cut sound out over 3 ms. Which sound plays when is
   unchanged.
-- The audio device buffer is a fixed 8192 frames (rodio's default is 50 ms, which underruns on some
-  ALSA setups) and the device is reopened on the next sound after a non-underrun stream error.
+- The audio device buffer is a fixed 8192 frames on Linux (rodio's default is 50 ms, which underruns on some
+  ALSA setups) and the driver's default elsewhere. The device is reopened on the next sound after a
+  non-underrun stream error.
 - Ellipses and lines use their own rasterization, which may differ by 1 px from GDI.
 - The configuration dialog and the screensaver password were not reimplemented (options can be
   edited in the INI). Features this screensaver does not use (animated palettes, 256 colors, ADS
