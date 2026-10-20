@@ -82,7 +82,9 @@ front of him.
   `SND_MEMORY | SND_ASYNC | SND_NODEFAULT`, without `SND_NOSTOP`, so the driver cuts the previous sound.
   The game does no buffering or scheduling of its own. The only other multimedia call, `mciSendCommand(MCI_CLOSE)`
   on exit (`seg5:0085`, device id `DS:35F0`), never runs: nothing stores a device id (initially 0), so there is no
-  MCI music or other MCI audio to reproduce.
+  MCI music or other MCI audio to reproduce. The routine has two callers: the script interpreter's sound opcode
+  (`seg12:0064`, `push si; callf seg5:00ba`), so a sound starts synchronously while the opcode runs inside the
+  50 ms step, and the chapter chime (`seg4:0895`, id 25).
 
 ## Original quirks kept on purpose
 
