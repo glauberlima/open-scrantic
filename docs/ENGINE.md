@@ -107,6 +107,31 @@ front of him.
   (`seg12:0064`, `push si; callf seg5:00ba`), so a sound starts synchronously while the opcode runs inside the
   50 ms step, and the chapter chime (`seg4:0895`, id 25).
 
+## Hidden and unused content in the original
+
+A search of `SCRANTIC.SCR` and the 41 TTM and 10 ADS scripts for easter eggs found none of the usual kind.
+What it found, and what it ruled out:
+
+- **Options outside the dialog.** The settings dialog (resource 1) has only *Load Background*
+  (`Background`), *Sounds*, *Password* and *Start of day*. `Clouds` and `Waves` are read from the INI
+  (`seg1:0c5c`) but never offered, so they are hidden settings.
+- **Text drawing nobody uses.** The TTM interpreter can draw strings (`TextOut` in `seg7:04ee`, font `WILLY.FON`,
+  "Willy Beamish Dialog", from another Dynamix game; the font is registered by `seg7:0765`), and it has a
+  family of `C0xx`/`CF01` media opcodes besides the sound opcode `C051`. No script uses any of them, so
+  Johnny never speaks. Together with the dead MCI call this is leftover engine capability, not content.
+- **One scene is never scheduled.** `STAND.ADS` defines tags 1-12 and 14-16, and the scene catalog has all
+  of them except 14. Tag 14 runs scene 42 of `MJAMBWLK.TTM` on its own (tag 15 uses the same scene inside a
+  longer sequence). Forcing it in a patched catalog shows Johnny fishing with a long line for about 8 s, with
+  sounds 4 and 16. Nothing in the scripts starts it, so it is unreachable in the original and in the port.
+- **Opcodes the port ignores.** The scripts use `A601`, `4214`, `1101` and `1111`, which are no-ops in the
+  original too (`seg12`, switch at `0x068f`; the draw switch at `0x015f`), and `1061` and `F05F`, which only
+  select the one palette (`JOHNCAST.PAL`). `1121` and `2012` store values in the script context; their
+  consumers were not traced.
+- **Ruled out.** No key or mouse handling beyond the standard screensaver rules (any key, or a move of more than
+  3 px, ends it; `seg1:0221`). Only `/c` and `/s` on the command line. The only dates read are the holidays and
+  the calendar-day change. The string `Dynamix, JTP - Jeff Tunnell Productions` is the XOR key of the password
+  scrambling (`seg5:0106`), never shown. The other strings are file names, INI keys and error messages.
+
 ## Original quirks kept on purpose
 
 These look like bugs but match the disassembly (checked against `seg3`, `seg4` and `seg12`), so do

@@ -96,6 +96,10 @@ case-insensitive.
 | `Waves`      | no ocean whitecaps                |
 | `Sounds`     | sound effects muted               |
 
+The original settings dialog offered only *Load Background* (`Background`), *Sounds*, a password and the start of
+the day. `Clouds` and `Waves` were never in the dialog: they can only be changed in this file, or on the
+command line.
+
 Each option can also be set for one run with `--background=N`, `--clouds=N`, `--waves=N` or `--sounds=N`
 (`N` is `0` or `1`). The command line wins over the file, and such a run never writes the value back to it.
 
