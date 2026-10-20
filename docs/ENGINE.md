@@ -115,14 +115,14 @@ What it found, and what it ruled out:
 - **Options outside the dialog.** The settings dialog (resource 1) has only *Load Background*
   (`Background`), *Sounds*, *Password* and *Start of day*. `Clouds` and `Waves` are read from the INI
   (`seg1:0c5c`) but never offered, so they are hidden settings.
-- **Text drawing nobody uses.** The TTM interpreter can draw strings (`TextOut` in `seg7:04ee`, font `WILLY.FON`,
+- **Text drawing nobody uses.** The TTM interpreter implements string drawing (`TextOut` in `seg7:04ee`, font `WILLY.FON`,
   "Willy Beamish Dialog", from another Dynamix game; the font is registered by `seg7:0765`), and it has a
   family of `C0xx`/`CF01` media opcodes besides the sound opcode `C051`. No script uses any of them, so
   Johnny never speaks. Together with the dead MCI call this is leftover engine capability, not content.
-- **One scene is never scheduled.** `STAND.ADS` defines tags 1-12 and 14-16, and the scene catalog has all
-  of them except 14. Tag 14 runs scene 42 of `MJAMBWLK.TTM` on its own (tag 15 uses the same scene inside a
-  longer sequence). Forcing it in a patched catalog shows Johnny fishing with a long line for about 8 s, with
-  sounds 4 and 16. Nothing in the scripts starts it, so it is unreachable in the original and in the port.
+- **One scene is never scheduled.** `STAND.ADS` defines tags 1-12 and 14-16, and the scene catalog has all of
+  them except 14 (it runs scene 42 of `MJAMBWLK.TTM`, which tag 15 also uses inside a longer sequence). The
+  original never plays it: it has no catalog entry and nothing in the scripts starts it. The port does not
+  play it either.
 - **Opcodes the port ignores.** The scripts use `A601`, `4214`, `1101` and `1111`, which are no-ops in the
   original too (`seg12`, switch at `0x068f`; the draw switch at `0x015f`), and `1061` and `F05F`, which only
   select the one palette (`JOHNCAST.PAL`). `1121` and `2012` store values in the script context; their
