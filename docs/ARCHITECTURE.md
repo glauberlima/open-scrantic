@@ -163,6 +163,10 @@ with black bars. The
 initial window is the largest whole multiple of 640×480 that fits in 80% of the screen, centered on the
 primary monitor (`center_on_primary_monitor`; not in fullscreen).
 
+`present::scale` scales each source row horizontally once and then blends rows vertically, with whole-row loops on
+packed channels: about four times faster at 1920×1080 than blending every output pixel in 2D, and the output is
+identical (a test compares it with the plain version over several window sizes).
+
 **F12** saves a screenshot next to the executable (`App::save_screenshot`, on the next redraw): `-raw` is the
 640×480 palette picture as the engine drew it, `-view` is what the window shows, dedithering included, before
 scaling.

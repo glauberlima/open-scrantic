@@ -101,32 +101,90 @@ fn sharp_axis(n_dst: usize, n_src: usize, k: f64) -> Vec<(usize, usize, u32)> {
         .collect()
 }
 
-fn mix(a: u32, b: u32, w: u32) -> u32 {
-    let ch = |sh: u32| (((a >> sh & 255) * (256 - w) + (b >> sh & 255) * w) >> 8) << sh;
-    ch(16) | ch(8) | ch(0)
+/// `a` blended with `b` at weight `w / 256`, per channel and rounded down: `(a * (256 - w) + b * w) >> 8`.
+/// Red and blue are computed together in 16-bit lanes (each sum is at most 255 * 256, so no lane carries
+/// into the next) and green on its own, which is what lets the loops over whole rows vectorize.
+fn blend(a: u32, b: u32, w: u32) -> u32 {
+    const RB: u32 = 0x00FF_00FF;
+    const G: u32 = 0x0000_FF00;
+    let rb = ((a & RB) * (256 - w) + (b & RB) * w) >> 8 & RB;
+    let g = ((a & G) * (256 - w) + (b & G) * w) >> 8 & G;
+    rb | g
+}
+
+/// One source row scaled horizontally: `out[x]` is the pixel at `cols[x]`, blended with its neighbor.
+fn scale_row(row: &[u32], cols: &[(usize, usize, u32)], out: &mut [u32]) {
+    for (d, &(c0, c1, wx)) in out.iter_mut().zip(cols) {
+        *d = if wx == 0 { row[c0] } else { blend(row[c0], row[c1], wx) };
+    }
+}
+
+/// A few horizontally scaled source rows. An output row needs at most two of them and its neighbors need the
+/// same ones, so each source row is scaled once instead of once per output row that touches it.
+struct ScaledRows<'a> {
+    src: &'a [u32],
+    cols: &'a [(usize, usize, u32)],
+    slots: [(usize, Vec<u32>); 3],
+    victim: usize,
+}
+
+impl<'a> ScaledRows<'a> {
+    fn new(src: &'a [u32], cols: &'a [(usize, usize, u32)]) -> Self {
+        let empty = || (usize::MAX, vec![0; cols.len()]);
+        Self {
+            src,
+            cols,
+            slots: [empty(), empty(), empty()],
+            victim: 0,
+        }
+    }
+
+    /// Slot holding source row `r`, scaling it into a slot not holding row `keep` if it is not there yet.
+    fn slot(&mut self, r: usize, keep: usize) -> usize {
+        if let Some(i) = self.slots.iter().position(|(row, _)| *row == r) {
+            return i;
+        }
+        while self.slots[self.victim].0 == keep {
+            self.victim = (self.victim + 1) % self.slots.len();
+        }
+        let i = self.victim;
+        self.victim = (i + 1) % self.slots.len();
+        scale_row(&self.src[r * W..][..W], self.cols, &mut self.slots[i].1);
+        self.slots[i].0 = r;
+        i
+    }
 }
 
 /// Draws `src` (640x480 RGB) into `dst` (`w` x `h`) as large as fits, centered, black elsewhere.
 /// Sharp-bilinear: pixels stay solid and are blended with the neighbor only within one screen pixel
 /// of an edge, so an integer factor is exact replication and a fractional one has uniform pixels.
 pub fn scale(src: &[u32], dst: &mut [u32], w: usize, h: usize) {
-    dst.fill(0);
     let k = (w as f64 / W as f64).min(h as f64 / H as f64);
     let (dw, dh) = ((W as f64 * k) as usize, (H as f64 * k) as usize);
     if dw == 0 || dh == 0 {
+        dst.fill(0);
         return;
     }
     let (ox, oy) = ((w - dw) / 2, (h - dh) / 2);
+    dst[..oy * w].fill(0);
+    dst[(oy + dh) * w..].fill(0);
     let cols = sharp_axis(dw, W, k);
+    let mut rows = ScaledRows::new(src, &cols);
     for (y, &(r0, r1, wy)) in sharp_axis(dh, H, k).iter().enumerate() {
-        let (row0, row1) = (&src[r0 * W..][..W], &src[r1 * W..][..W]);
-        let out = &mut dst[(y + oy) * w + ox..][..dw];
-        for (d, &(c0, c1, wx)) in out.iter_mut().zip(&cols) {
-            *d = if wx == 0 && wy == 0 {
-                row0[c0]
-            } else {
-                mix(mix(row0[c0], row0[c1], wx), mix(row1[c0], row1[c1], wx), wy)
-            };
+        let line = &mut dst[(y + oy) * w..][..w];
+        let (left, rest) = line.split_at_mut(ox);
+        let (out, right) = rest.split_at_mut(dw);
+        left.fill(0);
+        right.fill(0);
+        let a = rows.slot(r0, r0);
+        if wy == 0 {
+            out.copy_from_slice(&rows.slots[a].1);
+        } else {
+            let b = rows.slot(r1, rows.slots[a].0);
+            let (top, bottom) = (&rows.slots[a].1, &rows.slots[b].1);
+            for ((d, &t), &u) in out.iter_mut().zip(top).zip(bottom) {
+                *d = blend(t, u, wy);
+            }
         }
     }
 }
@@ -200,6 +258,67 @@ mod tests {
         (0..W * H)
             .map(|i| if (i % W + i / W).is_multiple_of(2) { a } else { b })
             .collect()
+    }
+
+    /// The straightforward version, one 2D blend per output pixel; `scale` must match it exactly.
+    fn scale_reference(src: &[u32], dst: &mut [u32], w: usize, h: usize) {
+        let mix = |a: u32, b: u32, w: u32| {
+            let ch = |sh: u32| (((a >> sh & 255) * (256 - w) + (b >> sh & 255) * w) >> 8) << sh;
+            ch(16) | ch(8) | ch(0)
+        };
+        dst.fill(0);
+        let k = (w as f64 / W as f64).min(h as f64 / H as f64);
+        let (dw, dh) = ((W as f64 * k) as usize, (H as f64 * k) as usize);
+        if dw == 0 || dh == 0 {
+            return;
+        }
+        let (ox, oy) = ((w - dw) / 2, (h - dh) / 2);
+        let cols = sharp_axis(dw, W, k);
+        for (y, &(r0, r1, wy)) in sharp_axis(dh, H, k).iter().enumerate() {
+            let (row0, row1) = (&src[r0 * W..][..W], &src[r1 * W..][..W]);
+            let out = &mut dst[(y + oy) * w + ox..][..dw];
+            for (d, &(c0, c1, wx)) in out.iter_mut().zip(&cols) {
+                *d = if wx == 0 && wy == 0 {
+                    row0[c0]
+                } else {
+                    mix(mix(row0[c0], row0[c1], wx), mix(row1[c0], row1[c1], wx), wy)
+                };
+            }
+        }
+    }
+
+    /// Pseudo-random colors with runs, so that solid areas and edges both occur.
+    fn noise(seed: u32) -> Vec<u32> {
+        let mut x = seed;
+        (0..W * H)
+            .map(|i| {
+                x = x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                if i % 7 < 3 { x >> 8 & 0xFF_FFFF } else { 0x00AA_5511 }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn scale_matches_the_plain_2d_blend_exactly() {
+        // Integer and fractional factors, wider and taller windows (bars on the sides, on top), and a
+        // window smaller than the picture.
+        for (w, h) in [
+            (640, 480),
+            (1280, 960),
+            (1920, 1080),
+            (800, 600),
+            (1000, 1000),
+            (641, 481),
+            (700, 900),
+            (333, 211),
+            (3840, 2160),
+        ] {
+            let src = noise((w * h) as u32);
+            let (mut fast, mut slow) = (vec![7u32; w * h], vec![9u32; w * h]);
+            scale(&src, &mut fast, w, h);
+            scale_reference(&src, &mut slow, w, h);
+            assert!(fast == slow, "{w}x{h}");
+        }
     }
 
     #[test]
