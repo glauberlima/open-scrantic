@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.4.0 — 2026-10-21
+
+### Bug Fixes
+
+- Average dithered colors in sRGB instead of linear light ([3beb217](https://github.com/glauberlima/open-scrantic/commit/3beb21785aaf2b9e5f3f48639aa64164427bb983))
+
+
+### Documentation
+
+- Reduce logo width to 240px ([2e8f6f2](https://github.com/glauberlima/open-scrantic/commit/2e8f6f210a712cfffed729199676e572943e15bb))
+- Drop the spacer between logo and badges ([acdb713](https://github.com/glauberlima/open-scrantic/commit/acdb7133a531bbd5f7d15edf68cd65cd19481719))
+- Move per-module notes into nested CLAUDE.md ([6a0617a](https://github.com/glauberlima/open-scrantic/commit/6a0617a611d88d4fa6edee6faa09eaa3553896fe))
+- Note the legacyScreenSaver host on macOS ([04c8f42](https://github.com/glauberlima/open-scrantic/commit/04c8f4211c0e711e6d7a2290a74b4901cf17b1fc))
+- Record how the original plays sounds ([d3aeb4a](https://github.com/glauberlima/open-scrantic/commit/d3aeb4a5a99e06f504030393e4f4807a06f27817))
+- Record how the original presents the frame ([6b8256c](https://github.com/glauberlima/open-scrantic/commit/6b8256ca63368773b9893e530e6e4ba995b6ecb4))
+- Note that the original's MCI call is dead code ([04dd0a7](https://github.com/glauberlima/open-scrantic/commit/04dd0a7cc8d74a0b985190a27a6d0301bfea62f7))
+- Record where the original plays sounds ([fb4db8d](https://github.com/glauberlima/open-scrantic/commit/fb4db8d12919d5ab9ce436993d7fcce76f849cb9))
+- Add diagrams of the architecture and the main loop ([0c59259](https://github.com/glauberlima/open-scrantic/commit/0c592599cb0da461a91faf4755757c60f7f04bb9))
+- Waves only controls the ocean whitecaps ([9c38b5d](https://github.com/glauberlima/open-scrantic/commit/9c38b5d6ec17130cbd75a20dfe128308c12862ea))
+- Document the holidays of the original ([dc3acdb](https://github.com/glauberlima/open-scrantic/commit/dc3acdb6f07d731f913cde3cc0257a5ca04905a2))
+- Add an image of the four holiday decorations ([5c534e8](https://github.com/glauberlima/open-scrantic/commit/5c534e8ce5344f985adedcb0051120b4aabfeeec))
+- Record the hidden and unused content of the original ([3b9fa9d](https://github.com/glauberlima/open-scrantic/commit/3b9fa9d0cc9a2cd9e4fa5db7ccbe6671cd820d49))
+- Simplify the note on the unscheduled STAND.ADS scene ([15b620b](https://github.com/glauberlima/open-scrantic/commit/15b620bb4399dc0aec0b1d90b6f5e62d953460ef))
+- Add a contributing guide and a code of conduct ([abd0e60](https://github.com/glauberlima/open-scrantic/commit/abd0e60de160f139661a1bfa0b2501fa5c00e985))
+- Link the contributing guide and the diagrams, mention Rust ([d53b48b](https://github.com/glauberlima/open-scrantic/commit/d53b48b102aeca6ddba78662f974168cfa14af78))
+- Sync architecture and engine notes with the code ([2bebf2b](https://github.com/glauberlima/open-scrantic/commit/2bebf2b756f808662bf8b195cab26fe14836cb90))
+
+
+### Features
+
+- Scale the frame with sharp-bilinear sampling ([ea138be](https://github.com/glauberlima/open-scrantic/commit/ea138be10909ab72dc7de49645858c8be104f067))
+- Use the driver's default buffer outside Linux ([bea6161](https://github.com/glauberlima/open-scrantic/commit/bea61617d5808d77e6003aabb42488c860592742))
+- Override the INI options from the command line ([9b64493](https://github.com/glauberlima/open-scrantic/commit/9b64493a6248b62fc46c49073125f20d1c92887a))
+- Set the calendar day with DATE=MMDD ([4c8e120](https://github.com/glauberlima/open-scrantic/commit/4c8e1203ad851bcab28ffdf832baaeda09a51d9a))
+- Center the window on the primary monitor ([d67c04b](https://github.com/glauberlima/open-scrantic/commit/d67c04b340b3588937d3f7f7e01045779d6d4fd2))
+
 ## v0.3.0 — 2026-10-18
 
 ### Bug Fixes
