@@ -49,6 +49,38 @@ jobs:
       # Lints are denied in Cargo.toml [lints]; any warning fails the build.
       - run: cargo clippy --all-targets
 
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+      - name: Install toolchain (from rust-toolchain.toml)
+        run: |
+          rustup toolchain install
+          rustup component add clippy
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: cargo test
+      # The Windows screensaver flavor (src/saver.rs, src/windows_ui.rs) exists only on Windows: lint and test it there.
+      - name: Lint the screensaver flavor
+        if: runner.os == 'Windows'
+        run: cargo clippy --all-targets --features screensaver
+      - name: Test the screensaver flavor
+        if: runner.os == 'Windows'
+        run: cargo test --features screensaver
+
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -76,3 +108,9 @@ jobs:
           BIN=target/release/open-scrantic
           [ "$RUNNER_OS" = "Windows" ] && BIN="$BIN.exe"
           "$BIN" --version
+      - name: Build and smoke test the screensaver flavor
+        if: runner.os == 'Windows'
+        run: |
+          cargo build --release --features screensaver
+          # /a (change password) is a switch the screensaver ignores: it must exit at once with status 0.
+          target/release/open-scrantic.exe /a

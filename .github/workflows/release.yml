@@ -114,10 +114,15 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - run: cargo build --release
       - run: cp target/release/open-scrantic.exe open-scrantic-windows-x64.exe
+      # The screensaver flavor: it understands only the switches Windows passes (see README).
+      - run: cargo build --release --features screensaver
+      - run: cp target/release/open-scrantic.exe open-scrantic-windows-x64.scr
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: open-scrantic-windows-x64
-          path: open-scrantic-windows-x64.exe
+          path: |
+            open-scrantic-windows-x64.exe
+            open-scrantic-windows-x64.scr
 
   # Runs only after every build succeeded, so a failed build never leaves a
   # release commit or tag on main.
