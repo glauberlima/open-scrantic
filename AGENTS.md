@@ -66,8 +66,8 @@ Key cross-cutting model:
   snapshot example drive them deterministically with the same formula.
 - **Coordinates**: TTM drawing gets the island offset from `Island::ttm_offset` (origin x + 1, plus
   272 px for scenes with flag `0x400`); walk frames use the raw island origin.
-- **Persistence**: `engine/config.rs` reads/writes `SCRANTIC.INI` with the original keys next to the
-  executable (`app_dir()`); a missing or invalid file is recreated with defaults; saved on clean exit only.
+- **Persistence**: `engine/config.rs` reads/writes `SCRANTIC.INI` with the original keys in the folder of the
+  original files (`settings_dir()`, next to the executable unless the `.scr` build found them in `%APPDATA%`); a missing or invalid file is recreated with defaults; saved on clean exit only.
 
 ## Conventions
 

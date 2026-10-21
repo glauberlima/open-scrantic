@@ -80,6 +80,10 @@ code and the `.scr` has no command line besides what Windows passes.
 - The preview is a borderless child window of the preview pane (`windows_ui::preview_attributes`): silent, no exit on
   input, never saves progress, and it ends when its parent window is gone (`App::about_to_wait`). It does not take
   part in the single-instance check (`windows_ui::already_running`, a `Local\` named mutex).
+- Files: `data_dirs()` searches the folder of the `.scr` and then `%APPDATA%\OpenScrantic` (`user_dir()`), because
+  Windows installs only the `.scr` into `System32`. `assets::locate` picks the first folder with `SCRANTIC.SCR`,
+  and `SCRANTIC.INI` is always read and written in that same folder (`settings_dir()`). Without an install `/c` has
+  nothing to configure and says where to put the files.
 - There is no console, so a fatal error of a run (missing files, ...) goes to `windows_ui::error_box`; the preview
   stays silent. The name in the Screen Saver Settings list is string resource 1 and the dialog gets visual styles
   from the manifest; `build.rs` embeds both from `resources/`.
@@ -90,8 +94,9 @@ code and the `.scr` has no command line besides what Windows passes.
 
 1. `main` parses the arguments with `cli::parse_args` (`--fullscreen`, `--dedither`, `--soft-audio`, the `--background`, `--clouds`,
    `--waves` and `--sounds` overrides, `--version`, `--help`) and resolves `app_dir()`, the directory of the
-   executable. Screensaver files and `SCRANTIC.INI` are always read from there. The Windows screensaver build calls
-   `saver::start` instead (see the next section).
+   executable. Screensaver files and `SCRANTIC.INI` are read from there (`data_dirs()`; `settings_dir()` is the
+   folder of the first one that has `SCRANTIC.SCR`). The Windows screensaver build calls `saver::start` instead
+   (see the next section).
 2. `ScreensaverData::load` reads the three files, rejects the installer placeholder (a tiny
    `RESOURCE.001`) and builds the `Archive` and `ExeData`. `ExeData::parse` fails on an
    unsupported build.

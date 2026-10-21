@@ -47,17 +47,20 @@ one day to the next, with the same behavior as the original.
 
 Download `open-scrantic-windows-x64.scr` instead of the `.exe`. It is a separate build made for Windows
 to run: it takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and has none of the options
-above. Put it in a folder together with `SCRANTIC.SCR`, `RESOURCE.MAP` and `RESOURCE.001`, then right-click
-it and choose **Test**, or **Configure**.
+above.
+
+It looks for `SCRANTIC.SCR`, `RESOURCE.MAP` and `RESOURCE.001` in the folder of the `.scr` and, if they are
+not there, in `%APPDATA%\OpenScrantic` (`C:\Users\<you>\AppData\Roaming\OpenScrantic`). The first folder
+that has `SCRANTIC.SCR` is the install, and `SCRANTIC.INI` is always read and written in that same folder.
+So you can right-click the `.scr`, choose **Install** (Windows copies it to `C:\Windows\System32`) and keep the
+three original files in `%APPDATA%\OpenScrantic`, which needs no administrator rights. If they are missing,
+the screensaver says where to put them and creates that folder.
 
 When Windows starts it (`/s`) it runs fullscreen with `--dedither` and `--soft-audio` already on, and exits
 on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background, Clouds,
 Waves and Sounds checkboxes, saved to `SCRANTIC.INI`, and **Preview** draws the island, silent, in the
-monitor picture of the Screen Saver Settings window.
-
-Windows lists the screensavers that are in `C:\Windows\System32`, where all four files must then be.
-From any other folder, use right-click, **Install**, or pick it by hand in the Registry
-(`HKCU\Control Panel\Desktop`, value `SCRNSAVE.EXE`).
+monitor picture of the Screen Saver Settings window. To try it without installing, right-click the `.scr`
+and choose **Test**.
 
 The regular program does not know these switches. On macOS and Linux there is no screensaver build.
 
