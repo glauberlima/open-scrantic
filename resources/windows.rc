@@ -1,0 +1,8 @@
+// Screensaver name shown in the Windows Screen Saver Settings list (string resource 1).
+STRINGTABLE
+BEGIN
+    1, "Open Scrantic"
+END
+
+// Application manifest (RT_MANIFEST = 24, id 1): visual styles for the settings dialog.
+1 24 "windows.manifest"

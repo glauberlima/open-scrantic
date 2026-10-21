@@ -17,6 +17,13 @@ rodio = { version = "0.23.0", default-features = false, features = ["playback"] 
 softbuffer = "0.4.8"
 winit = "0.30.13"
 
+[features]
+# Windows only: builds the screensaver (`.scr`) flavor, which understands just the switches Windows passes.
+screensaver = ["dep:windows-sys"]
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61.2", optional = true, features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Security", "Win32_System_LibraryLoader", "Win32_System_Threading", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
+
 [profile.release]
 opt-level = 3
 lto = "fat"
@@ -25,9 +32,13 @@ panic = "abort"
 strip = "symbols"
 
 # Zero-warning policy: any compiler or clippy warning fails the build.
+# `unsafe` is denied crate-wide; only `windows_ui` (Win32 calls) allows it.
 [lints.rust]
 warnings = "deny"
-unsafe_code = "forbid"
+unsafe_code = "deny"
 
 [lints.clippy]
 all = { level = "deny", priority = -1 }
+
+[target."cfg(windows)".build-dependencies]
+embed-resource = "3.0.12"
