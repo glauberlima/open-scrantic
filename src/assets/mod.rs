@@ -5,7 +5,7 @@ pub mod resource;
 
 use std::fmt;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub use exe::ExeData;
 pub use resource::Archive;
@@ -70,7 +70,31 @@ fn read_ci(dir: &Path, name: &str) -> Result<Vec<u8>> {
     Err(AssetError::Missing(format!("{} in {}", name, dir.display())))
 }
 
+/// Whether `dir` holds a file called `name`, case-insensitively.
+fn has_ci(dir: &Path, name: &str) -> bool {
+    fs::read_dir(dir).is_ok_and(|mut entries| {
+        entries.any(|e| e.is_ok_and(|e| e.file_name().to_string_lossy().eq_ignore_ascii_case(name)))
+    })
+}
+
+/// The install: the first of `dirs` that has `SCRANTIC.SCR`. `SCRANTIC.INI` lives in the same folder.
+pub fn locate(dirs: &[PathBuf]) -> Result<&Path> {
+    dirs.iter()
+        .find(|dir| has_ci(dir, "SCRANTIC.SCR"))
+        .map(PathBuf::as_path)
+        .ok_or_else(|| {
+            let places: Vec<_> = dirs.iter().map(|d| d.display().to_string()).collect();
+            AssetError::Missing(format!("SCRANTIC.SCR in {}", places.join(" or ")))
+        })
+}
+
 impl ScreensaverData {
+    /// Loads from the install found by [`locate`]: if its files are incomplete or invalid that is an error,
+    /// rather than a silent fall back to another folder.
+    pub fn load_first(dirs: &[PathBuf]) -> Result<Self> {
+        Self::load(locate(dirs)?)
+    }
+
     pub fn load(dir: &Path) -> Result<Self> {
         let exe = read_ci(dir, "SCRANTIC.SCR")?;
         let map = read_ci(dir, "RESOURCE.MAP")?;
@@ -107,6 +131,42 @@ mod tests {
         assert_eq!(data.archive.ttm("FISHWALK.TTM").unwrap().scenes, vec![(19, 1)]);
         let ocean = data.archive.scr("OCEAN00.SCR").unwrap();
         assert_eq!((ocean.w, ocean.h), (640, 480));
+    }
+
+    #[test]
+    fn load_first_reports_every_folder_it_searched() {
+        let base = std::env::temp_dir().join(format!("open-scrantic-test-{}", std::process::id()));
+        let (a, b) = (base.join("a"), base.join("b"));
+        fs::create_dir_all(&a).unwrap();
+        let err = ScreensaverData::load_first(&[a.clone(), b.clone()])
+            .err()
+            .expect("no files anywhere");
+        let msg = err.to_string();
+        assert!(
+            msg.contains("SCRANTIC.SCR") && msg.contains(&a.display().to_string()),
+            "{msg}"
+        );
+        assert!(msg.contains(&b.display().to_string()), "{msg}");
+        // A folder with SCRANTIC.SCR is the install, even when it is incomplete: no fall back to the next one.
+        fs::write(a.join("scrantic.scr"), b"x").unwrap();
+        let err = ScreensaverData::load_first(&[a, b]).err().expect("incomplete install");
+        assert!(err.to_string().contains("RESOURCE.MAP"), "{err}");
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn the_install_is_the_first_folder_with_the_executable() {
+        let base = std::env::temp_dir().join(format!("open-scrantic-locate-{}", std::process::id()));
+        let (a, b) = (base.join("a"), base.join("b"));
+        fs::create_dir_all(&a).unwrap();
+        fs::create_dir_all(&b).unwrap();
+        let dirs = [a.clone(), b.clone()];
+        assert!(locate(&dirs).is_err());
+        fs::write(b.join("SCRANTIC.SCR"), b"x").unwrap();
+        assert_eq!(locate(&dirs).unwrap(), b);
+        fs::write(a.join("Scrantic.scr"), b"x").unwrap();
+        assert_eq!(locate(&dirs).unwrap(), a);
+        let _ = fs::remove_dir_all(base);
     }
 
     #[test]

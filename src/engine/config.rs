@@ -43,9 +43,10 @@ impl Default for Config {
 }
 
 impl Config {
-    /// `SCRANTIC.INI` lives next to the executable; the location cannot be customized.
+    /// `SCRANTIC.INI` lives in the folder the original files are read from ([`crate::settings_dir`]); the
+    /// location cannot be customized.
     pub fn path() -> PathBuf {
-        crate::app_dir().join("SCRANTIC.INI")
+        crate::settings_dir().join("SCRANTIC.INI")
     }
 
     /// Loads the INI. A missing file, or one with any invalid value, is replaced by a new file
@@ -123,6 +124,9 @@ impl Config {
             self.day,
             self.start_time
         );
+        if let Some(dir) = path.parent() {
+            fs::create_dir_all(dir)?;
+        }
         fs::write(path, text)
     }
 }

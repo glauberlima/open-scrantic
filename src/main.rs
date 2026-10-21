@@ -292,7 +292,7 @@ fn main() {
     };
     #[cfg(feature = "screensaver")]
     let Some(opts) = saver::start() else { return };
-    let data = assets::ScreensaverData::load(&open_scrantic::app_dir()).unwrap_or_else(|e| opts.fail(e));
+    let data = assets::ScreensaverData::load_first(&open_scrantic::data_dirs()).unwrap_or_else(|e| opts.fail_data(e));
     let seed = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())

@@ -1,8 +1,8 @@
 //! Command line of the regular (windowed or fullscreen) program. The Windows screensaver build
 //! (`--features screensaver`) has none of this: see `saver.rs`.
 
-use open_scrantic::audio;
 use open_scrantic::engine::config::Config;
+use open_scrantic::{assets, audio};
 
 const USAGE: &str = "\
 Usage: open-scrantic [--fullscreen] [--dedither] [--soft-audio] [--background=0|1] [--clouds=0|1]
@@ -59,6 +59,11 @@ impl Options {
     pub fn fail(&self, e: impl std::fmt::Display) -> ! {
         eprintln!("error: {e}");
         std::process::exit(1);
+    }
+
+    /// Reports that the screensaver files could not be loaded and exits.
+    pub fn fail_data(&self, e: assets::AssetError) -> ! {
+        self.fail(e)
     }
 
     /// The sound output.

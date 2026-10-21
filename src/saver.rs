@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, WindowEvent};
 
-use open_scrantic::audio;
 use open_scrantic::engine::config::Config;
 use open_scrantic::windows_ui;
+use open_scrantic::{assets, audio};
 
 /// What the program does for the arguments Windows passed.
 #[derive(Debug, PartialEq)]
@@ -45,6 +45,11 @@ impl Options {
             windows_ui::error_box(&e.to_string());
         }
         std::process::exit(1);
+    }
+
+    /// Reports that the screensaver files could not be loaded and exits.
+    pub fn fail_data(&self, e: assets::AssetError) -> ! {
+        self.fail(data_error_message(&e))
     }
 
     /// The sound output; a preview has none.
@@ -117,8 +122,31 @@ pub fn start() -> Option<Options> {
     }
 }
 
-/// `/c`: lets the user toggle the four INI options.
+/// Text for a failure to load the screensaver files. When they are missing it says where to put them, and
+/// creates that folder so that it only takes pasting them in.
+fn data_error_message(e: &assets::AssetError) -> String {
+    match (e, open_scrantic::user_dir()) {
+        (assets::AssetError::Missing(_), Some(dir)) => {
+            let _ = std::fs::create_dir_all(&dir);
+            format!(
+                "{e}
+
+Copy SCRANTIC.SCR, RESOURCE.MAP and RESOURCE.001 of the original screensaver to:
+{}",
+                dir.display()
+            )
+        }
+        _ => e.to_string(),
+    }
+}
+
+/// `/c`: lets the user toggle the four INI options. The INI lives with the original files, so without them
+/// there is nothing to configure yet.
 fn configure(owner: Option<isize>) {
+    if let Err(e) = assets::locate(&open_scrantic::data_dirs()) {
+        windows_ui::error_box(&data_error_message(&e));
+        return;
+    }
     let mut cfg = Config::load();
     let current = [cfg.background, cfg.clouds, cfg.waves, cfg.sounds];
     if let Some(new) = windows_ui::settings_dialog(current, owner) {
