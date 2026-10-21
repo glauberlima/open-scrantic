@@ -49,6 +49,8 @@ flowchart TB
 
     subgraph front["Front end"]
         main["main.rs<br/>window, input, clocks"]
+        cli["cli.rs<br/>command line"]
+        saver["saver.rs, windows_ui.rs<br/>Windows .scr build only"]
         present["present.rs<br/>palette, dedither, scale"]
         audio["audio.rs<br/>sound playback"]
     end
@@ -71,7 +73,7 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    A["main()"] --> B["parse_args<br/>flags and option overrides"]
+    A["main()"] --> B["cli::parse_args<br/>flags and option overrides<br/>(.scr build: saver::start, Windows switches)"]
     B -->|"--help / --version / bad flag"| X(["print and exit"])
     B --> C["ScreensaverData::load<br/>reads the 3 files from app_dir()"]
     C -->|"missing, placeholder or unsupported build"| E(["error, exit 1"])

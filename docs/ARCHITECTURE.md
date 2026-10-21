@@ -38,7 +38,7 @@ Three layers, with dependencies pointing downward only:
 
 | Layer     | Modules                                             | Knows about                          |
 |-----------|-----------------------------------------------------|--------------------------------------|
-| Front end | `main.rs`, `present.rs`, `audio.rs`                 | window, input, sound device, clocks  |
+| Front end | `main.rs`, `cli.rs`, `present.rs`, `audio.rs`       | window, input, sound device, clocks  |
 | Engine    | `engine/*`                                          | scripts, story, drawing; no I/O      |
 | Assets    | `assets/*`                                          | file formats; no engine state        |
 
@@ -60,13 +60,38 @@ Three layers, with dependencies pointing downward only:
 | `present.rs`           | Frame to window pixels: palette lookup, optional dedithering, scaling (pure functions)          | —              |
 | `audio.rs`             | One-channel sound playback with `sndPlaySound(SND_ASYNC)` semantics (rodio); optional soft mode | —              |
 | `main.rs`              | Window (winit), presenting (softbuffer), clocks, input (Esc, F12), saving settings on exit      | —              |
+| `cli.rs`               | Command line of the regular program: `--fullscreen`, `--dedither`, `--soft-audio`, INI overrides | —              |
+| `saver.rs`             | Windows screensaver build only: the Windows switches (`/s`, `/c`, `/p`), input guard, fixed options | —           |
+| `windows_ui.rs`        | Windows screensaver build only: settings dialog, single-instance mutex, preview window, error box | —              |
+| `build.rs`, `resources/` | Windows screensaver build only: embeds the screensaver name and the manifest (visual styles)  | —              |
 | `examples/snapshot.rs` | Headless run with a fixed clock that writes PNGs                                                | —              |
+
+## Windows screensaver build
+
+`cargo build --release --features screensaver` (Windows only) builds the `.scr` flavor. It is a separate binary, not
+a mode of the regular one: everything of the other flavor is compiled out, so the regular program has no screensaver
+code and the `.scr` has no command line besides what Windows passes.
+
+- `saver::start` reads `/s` (run), `/c` or no argument (settings dialog) and `/p HWND` (preview) and ignores anything
+  else, `/a` included. A run is always fullscreen with `--dedither` and `--soft-audio`.
+- `saver::InputGuard` ends a run on a key or button press, the wheel, losing the focus, or the cursor moving more than
+  4 px from where it first appeared. Input is ignored for the first second, as Windows sends events of its own when
+  it creates the window, and losing the focus counts only once the window has had it.
+- The preview is a borderless child window of the preview pane (`windows_ui::preview_attributes`): silent, no exit on
+  input, never saves progress, and it ends when its parent window is gone (`App::about_to_wait`). It does not take
+  part in the single-instance check (`windows_ui::already_running`, a `Local\` named mutex).
+- There is no console, so a fatal error of a run (missing files, ...) goes to `windows_ui::error_box`; the preview
+  stays silent. The name in the Screen Saver Settings list is string resource 1 and the dialog gets visual styles
+  from the manifest; `build.rs` embeds both from `resources/`.
+- `windows_ui.rs` is the only module that allows `unsafe`; without the feature the crate has
+  `#![forbid(unsafe_code)]`.
 
 ## Startup
 
-1. `main` parses the arguments (`--fullscreen`, `--dedither`, `--soft-audio`, the `--background`, `--clouds`,
+1. `main` parses the arguments with `cli::parse_args` (`--fullscreen`, `--dedither`, `--soft-audio`, the `--background`, `--clouds`,
    `--waves` and `--sounds` overrides, `--version`, `--help`) and resolves `app_dir()`, the directory of the
-   executable. Screensaver files and `SCRANTIC.INI` are always read from there.
+   executable. Screensaver files and `SCRANTIC.INI` are always read from there. The Windows screensaver build calls
+   `saver::start` instead (see the next section).
 2. `ScreensaverData::load` reads the three files, rejects the installer placeholder (a tiny
    `RESOURCE.001`) and builds the `Archive` and `ExeData`. `ExeData::parse` fails on an
    unsupported build.

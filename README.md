@@ -43,6 +43,27 @@ one day to the next, with the same behavior as the original.
    screen. **F12** saves a screenshot (`-raw` as drawn, `-view` as shown) next to the executable.
 
 <details>
+<summary>Use it as a Windows screensaver</summary>
+
+Download `open-scrantic-windows-x64.scr` instead of the `.exe`. It is a separate build made for Windows
+to run: it takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and has none of the options
+above. Put it in a folder together with `SCRANTIC.SCR`, `RESOURCE.MAP` and `RESOURCE.001`, then right-click
+it and choose **Test**, or **Configure**.
+
+When Windows starts it (`/s`) it runs fullscreen with `--dedither` and `--soft-audio` already on, and exits
+on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background, Clouds,
+Waves and Sounds checkboxes, saved to `SCRANTIC.INI`, and **Preview** draws the island, silent, in the
+monitor picture of the Screen Saver Settings window.
+
+Windows lists the screensavers that are in `C:\Windows\System32`, where all four files must then be.
+From any other folder, use right-click, **Install**, or pick it by hand in the Registry
+(`HKCU\Control Panel\Desktop`, value `SCRNSAVE.EXE`).
+
+The regular program does not know these switches. On macOS and Linux there is no screensaver build.
+
+</details>
+
+<details>
 <summary>Your system refuses to open the file?</summary>
 
 The program is not code-signed, so your system may warn about it.

@@ -20,6 +20,7 @@ original — read it before changing engine behavior. Code comments cite origina
 ```sh
 cargo build --release                                   # optimized binary: target/release/open-scrantic
 cp SCRANTIC.SCR RESOURCE.MAP RESOURCE.001 target/release/ && target/release/open-scrantic [--fullscreen] [--dedither] [--soft-audio]   # screensaver files + SCRANTIC.INI live next to the binary; Esc exits
+cargo build --release --features screensaver           # Windows only: the .scr flavor (only /s /c /p /a, no other CLI); clippy and tests also need the flag to cover src/saver.rs
 cargo clippy --all-targets                              # must stay at zero warnings
 cargo fmt --check                                       # max_width = 120
 OPEN_SCRANTIC_DATA=/path/to/install cargo test          # data-dependent tests silently pass without it
