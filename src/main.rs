@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use winit::application::ApplicationHandler;
-use winit::dpi::PhysicalSize;
+use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
@@ -205,6 +205,21 @@ impl App {
     }
 }
 
+/// Moves the window so its whole frame (title bar included) is centred on the primary monitor.
+fn center_on_primary_monitor(window: &Window, event_loop: &ActiveEventLoop) {
+    let Some(monitor) = event_loop
+        .primary_monitor()
+        .or_else(|| event_loop.available_monitors().next())
+    else {
+        return;
+    };
+    let (m, origin) = (monitor.size(), monitor.position());
+    let w = window.outer_size();
+    let x = origin.x + (m.width as i32 - w.width as i32) / 2;
+    let y = origin.y + (m.height as i32 - w.height as i32) / 2;
+    window.set_outer_position(PhysicalPosition::new(x, y));
+}
+
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
@@ -236,6 +251,9 @@ impl ApplicationHandler for App {
                 return;
             }
         };
+        if !self.fullscreen {
+            center_on_primary_monitor(&window, event_loop);
+        }
         window.set_cursor_visible(!self.fullscreen);
         let surface = softbuffer::Context::new(Rc::clone(&window))
             .and_then(|ctx| softbuffer::Surface::new(&ctx, Rc::clone(&window)));
