@@ -49,12 +49,23 @@ Download `open-scrantic-windows-x64.scr` instead of the `.exe`. It is a separate
 to run: it takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and has none of the options
 above.
 
-It looks for `SCRANTIC.SCR`, `RESOURCE.MAP` and `RESOURCE.001` in the folder of the `.scr` and, if they are
-not there, in `%APPDATA%\OpenScrantic` (`C:\Users\<you>\AppData\Roaming\OpenScrantic`). The first folder
-that has `SCRANTIC.SCR` is the install, and `SCRANTIC.INI` is always read and written in that same folder.
-So you can right-click the `.scr`, choose **Install** (Windows copies it to `C:\Windows\System32`) and keep the
-three original files in `%APPDATA%\OpenScrantic`, which needs no administrator rights. If they are missing,
-the screensaver says where to put them and creates that folder.
+To make it appear in the **Screen Saver Settings** list:
+
+1. Put `SCRANTIC.SCR`, `RESOURCE.MAP` and `RESOURCE.001` in `%APPDATA%\OpenScrantic`
+   (`C:\Users\<you>\AppData\Roaming\OpenScrantic`; create the folder if it does not exist).
+2. Copy the `.scr` into `C:\Windows\System32`, which needs administrator rights. Open PowerShell as
+   administrator and run, in the folder you downloaded it to:
+   `Copy-Item .\open-scrantic-windows-x64.scr C:\Windows\System32\OpenScrantic.scr`
+3. Open **Screen Saver Settings** (Settings, Personalization, Lock screen, Screen saver settings), pick
+   **Open Scrantic** and set the wait time.
+
+Windows lists only the screensavers that are in `System32`. The `.scr` looks for the three original files
+beside itself first and then in `%APPDATA%\OpenScrantic`; the first folder that has `SCRANTIC.SCR` is the
+install, and `SCRANTIC.INI` is always read and written in that same folder (so nothing is ever written to
+`System32`). If the files are missing, the screensaver says where to put them and creates that folder.
+
+To remove it, delete `C:\Windows\System32\OpenScrantic.scr` (as administrator) and the
+`%APPDATA%\OpenScrantic` folder.
 
 When Windows starts it (`/s`) it runs fullscreen with `--dedither` and `--soft-audio` already on, and exits
 on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background, Clouds,
