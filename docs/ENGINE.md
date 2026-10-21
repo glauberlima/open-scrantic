@@ -158,7 +158,7 @@ not "fix" them:
 - The final-scene pick gives up after a bounded number of draws instead of looping forever.
 - The title screen stays up for 2 s (on 1992 hardware it was visible while the first session loaded).
 - `--dedither` (`src/present.rs`, not in the original) replaces every 2x2 checkerboard (`a b / b a`)
-  with the linear-light average of its two colors; the dither of the original is this pattern in
+  with the average of its two colors, taken in the palette's own sRGB values (not in linear light); the dither of the original is this pattern in
   two palette indices. Where a dithered area ends in a one-pixel line, alternating runs of 4 or more
   pixels (rows and columns) are blended too, minus an end pixel that touches an equal neighbor (the
   edge of a solid area). It only affects the pixels sent to the window; off by default.

@@ -59,13 +59,14 @@ Three layers, with dependencies pointing downward only:
 | `engine/config.rs`     | `SCRANTIC.INI` read/write with the original keys                                                | —              |
 | `present.rs`           | Frame to window pixels: palette lookup, optional dedithering, scaling (pure functions)          | —              |
 | `audio.rs`             | One-channel sound playback with `sndPlaySound(SND_ASYNC)` semantics (rodio); optional soft mode | —              |
-| `main.rs`              | Window (winit), presenting (softbuffer), clocks, input, saving settings on exit                 | —              |
+| `main.rs`              | Window (winit), presenting (softbuffer), clocks, input (Esc, F12), saving settings on exit      | —              |
 | `examples/snapshot.rs` | Headless run with a fixed clock that writes PNGs                                                | —              |
 
 ## Startup
 
-1. `main` parses the arguments (`--fullscreen`, `--version`, `--help`) and resolves `app_dir()`,
-   the directory of the executable. Screensaver files and `SCRANTIC.INI` are always read from there.
+1. `main` parses the arguments (`--fullscreen`, `--dedither`, `--soft-audio`, the `--background`, `--clouds`,
+   `--waves` and `--sounds` overrides, `--version`, `--help`) and resolves `app_dir()`, the directory of the
+   executable. Screensaver files and `SCRANTIC.INI` are always read from there.
 2. `ScreensaverData::load` reads the three files, rejects the installer placeholder (a tiny
    `RESOURCE.001`) and builds the `Archive` and `ExeData`. `ExeData::parse` fails on an
    unsupported build.
@@ -129,7 +130,12 @@ the average of its two colors) and `present::scale` draws it into the window: it
 `min(width/640, height/480)` with sharp-bilinear sampling (pixels stay solid; a pixel blends with its
 neighbor only within one screen pixel of the edge, so an integer factor is exact replication) and centers it
 with black bars. The
-initial window is the largest whole multiple of 640×480 that fits in 80% of the screen.
+initial window is the largest whole multiple of 640×480 that fits in 80% of the screen, centered on the
+primary monitor (`center_on_primary_monitor`; not in fullscreen).
+
+**F12** saves a screenshot next to the executable (`App::save_screenshot`, on the next redraw): `-raw` is the
+640×480 palette picture as the engine drew it, `-view` is what the window shows, dedithering included, before
+scaling.
 
 ## Story: sessions and plans (`engine/mod.rs`)
 

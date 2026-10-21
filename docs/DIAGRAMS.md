@@ -254,7 +254,7 @@ centered at 1:1 on a black full-screen window; the scaling below is a deliberate
 flowchart TD
     F["front canvas<br/>640x480 palette indices"] --> Q{"--dedither?"}
     Q -->|no| PL["present::plain<br/>palette lookup"]
-    Q -->|yes| DD["present::dedither<br/>2x2 checkerboards and alternating<br/>runs blended in linear light"]
+    Q -->|yes| DD["present::dedither<br/>2x2 checkerboards and alternating<br/>runs blended in sRGB"]
     PL --> SC
     DD --> SC["present::scale"]
     SC --> K["k = min(w / 640, h / 480)<br/>image size = 640k x 480k, centered,<br/>black bars on the other axis"]
