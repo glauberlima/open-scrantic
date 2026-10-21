@@ -10,21 +10,26 @@ use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::raw_window_handle::{RawWindowHandle, Win32WindowHandle};
 use winit::window::{Window, WindowAttributes};
 
-use windows_sys::Win32::Foundation::{ERROR_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, RECT, WPARAM};
+use windows_sys::Win32::Foundation::{ERROR_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows_sys::Win32::Graphics::Gdi::{
-    COLOR_BTNFACE, CreateFontIndirectW, DEFAULT_GUI_FONT, DeleteObject, GetStockObject, HBRUSH, HGDIOBJ, UpdateWindow,
+    COLOR_BTNFACE, CreateFontIndirectW, DEFAULT_GUI_FONT, DeleteObject, GetStockObject, HBRUSH, HGDIOBJ,
+    MONITOR_DEFAULTTONEAREST, MONITOR_DEFAULTTOPRIMARY, MonitorFromPoint, MonitorFromWindow, UpdateWindow,
 };
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::System::Threading::CreateMutexW;
+use windows_sys::Win32::UI::HiDpi::{
+    AdjustWindowRectExForDpi, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, GetDpiForMonitor, MDT_EFFECTIVE_DPI,
+    SetProcessDpiAwarenessContext, SystemParametersInfoForDpi,
+};
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{EnableWindow, SetFocus};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    AdjustWindowRect, BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON, BS_PUSHBUTTON, CreateWindowExW,
-    DefWindowProcW, DestroyWindow, DispatchMessageW, GetClientRect, GetDlgItem, GetMessageW, GetSystemMetrics,
-    GetWindowRect, IDC_ARROW, IDCANCEL, IDOK, IsDialogMessageW, IsWindow, LoadCursorW, MB_ICONERROR, MB_OK,
-    MB_SETFOREGROUND, MSG, MessageBoxW, NONCLIENTMETRICSW, PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN,
-    SPI_GETNONCLIENTMETRICS, SW_SHOW, SendMessageW, SetForegroundWindow, ShowWindow, SystemParametersInfoW,
-    TranslateMessage, UnregisterClassW, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_SETFONT, WNDCLASSW, WS_CAPTION, WS_CHILD,
-    WS_EX_DLGMODALFRAME, WS_POPUP, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
+    BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON, BS_PUSHBUTTON, CreateWindowExW, DefWindowProcW,
+    DestroyWindow, DispatchMessageW, GetClientRect, GetDlgItem, GetMessageW, GetSystemMetrics, GetWindowRect,
+    IDC_ARROW, IDCANCEL, IDOK, IsDialogMessageW, IsWindow, LoadCursorW, MB_ICONERROR, MB_OK, MB_SETFOREGROUND, MSG,
+    MessageBoxW, NONCLIENTMETRICSW, PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SPI_GETNONCLIENTMETRICS,
+    SW_SHOW, SendMessageW, SetForegroundWindow, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_COMMAND,
+    WM_DESTROY, WM_SETFONT, WNDCLASSW, WS_CAPTION, WS_CHILD, WS_EX_DLGMODALFRAME, WS_POPUP, WS_SYSMENU, WS_TABSTOP,
+    WS_VISIBLE,
 };
 
 const TITLE: &str = "Open Scrantic - Settings";
@@ -51,14 +56,44 @@ fn wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
 
-/// The font Windows uses for its own dialogs (Segoe UI 9 pt), or null if it cannot be queried. The caller
-/// deletes it.
-unsafe fn system_message_font() -> HGDIOBJ {
+/// `v`, a length at 96 DPI, at `dpi`, rounded to the nearest pixel.
+fn scaled(v: i32, dpi: u32) -> i32 {
+    (v * dpi as i32 + 48) / 96
+}
+
+/// DPI of the monitor `owner` is on, or of the primary monitor without an owner; 96 if it cannot be told.
+/// (The monitor's, not the window's: a window of a DPI-unaware process reports 96 wherever it is.)
+unsafe fn monitor_dpi(owner: HWND) -> u32 {
+    // SAFETY: the monitor handle comes from the calls just before; both out values are valid for the call.
+    unsafe {
+        let monitor = if owner.is_null() {
+            MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTOPRIMARY)
+        } else {
+            MonitorFromWindow(owner, MONITOR_DEFAULTTONEAREST)
+        };
+        let (mut x, mut y) = (0, 0);
+        if GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut x, &mut y) == 0 && x != 0 {
+            x
+        } else {
+            96
+        }
+    }
+}
+
+/// The font Windows uses for its own dialogs (Segoe UI 9 pt) at `dpi`, or null if it cannot be queried. The
+/// caller deletes it.
+unsafe fn system_message_font(dpi: u32) -> HGDIOBJ {
     // SAFETY: `metrics` is valid for the call and `cbSize` tells Windows how much of it to fill.
     unsafe {
         let mut metrics: NONCLIENTMETRICSW = std::mem::zeroed();
         metrics.cbSize = std::mem::size_of::<NONCLIENTMETRICSW>() as u32;
-        let ok = SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, metrics.cbSize, (&raw mut metrics).cast(), 0);
+        let ok = SystemParametersInfoForDpi(
+            SPI_GETNONCLIENTMETRICS,
+            metrics.cbSize,
+            (&raw mut metrics).cast(),
+            0,
+            dpi,
+        );
         if ok == 0 {
             return null_mut();
         }
@@ -139,6 +174,9 @@ pub fn settings_dialog(initial: [bool; 4], owner: Option<isize>) -> Option<[bool
     let class = wide(CLASS);
     // SAFETY: plain Win32 calls; every pointer passed is valid for the duration of its call.
     unsafe {
+        // Without this Windows stretches the dialog on screens scaled above 100%, which blurs it. This process
+        // shows nothing else; a run gets the same awareness from winit.
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         let instance = GetModuleHandleW(null());
         let wc = WNDCLASSW {
             style: 0,
@@ -162,14 +200,17 @@ pub fn settings_dialog(initial: [bool; 4], owner: Option<isize>) -> Option<[bool
             null_mut()
         };
 
+        let dpi = monitor_dpi(owner);
+        let px = |v: i32| scaled(v, dpi);
+        let (cw, ch) = (px(CLIENT_W), px(CLIENT_H));
         let style = WS_POPUP | WS_CAPTION | WS_SYSMENU;
         let mut frame = RECT {
             left: 0,
             top: 0,
-            right: CLIENT_W,
-            bottom: CLIENT_H,
+            right: cw,
+            bottom: ch,
         };
-        AdjustWindowRect(&mut frame, style, 0);
+        AdjustWindowRectExForDpi(&mut frame, style, 0, WS_EX_DLGMODALFRAME, dpi);
         let (w, h) = (frame.right - frame.left, frame.bottom - frame.top);
         let title = wide(TITLE);
         // Centered over the owner (Screen Saver Settings) when there is one, else on the screen.
@@ -201,53 +242,49 @@ pub fn settings_dialog(initial: [bool; 4], owner: Option<isize>) -> Option<[bool
             return None;
         }
 
-        let message_font = system_message_font();
+        let message_font = system_message_font(dpi);
         let font = if message_font.is_null() {
             GetStockObject(DEFAULT_GUI_FONT)
         } else {
             message_font
         } as usize;
+        let margin = px(16);
         child(
             hwnd,
             "STATIC",
             "Choose which features are enabled:",
             SS_CENTER,
-            [16, 14, CLIENT_W - 32, 18],
+            [margin, px(14), cw - 2 * margin, px(18)],
             -1,
             font,
         );
+        let (check_w, row) = (px(CHECKBOX_W), px(24));
         for (i, label) in LABELS.iter().enumerate() {
             let id = FIRST_CHECKBOX + i as i32;
-            let y = 40 + 24 * i as i32;
+            let y = px(40) + row * i as i32;
             let style = WS_TABSTOP | BS_AUTOCHECKBOX as u32;
             let check = child(
                 hwnd,
                 "BUTTON",
                 label,
                 style,
-                [(CLIENT_W - CHECKBOX_W) / 2, y, CHECKBOX_W, 20],
+                [(cw - check_w) / 2, y, check_w, px(20)],
                 id,
                 font,
             );
             SendMessageW(check, BM_SETCHECK, usize::from(initial[i]), 0);
         }
+        let (button_w, gap, y, button_h) = (px(BUTTON_W), px(BUTTON_GAP), px(146), px(26));
+        let x = (cw - 2 * button_w - gap) / 2;
         let ok = WS_TABSTOP | BS_DEFPUSHBUTTON as u32;
-        child(
-            hwnd,
-            "BUTTON",
-            "OK",
-            ok,
-            [(CLIENT_W - 2 * BUTTON_W - BUTTON_GAP) / 2, 146, BUTTON_W, 26],
-            IDOK,
-            font,
-        );
+        child(hwnd, "BUTTON", "OK", ok, [x, y, button_w, button_h], IDOK, font);
         let cancel = WS_TABSTOP | BS_PUSHBUTTON as u32;
         child(
             hwnd,
             "BUTTON",
             "Cancel",
             cancel,
-            [(CLIENT_W + BUTTON_GAP) / 2, 146, BUTTON_W, 26],
+            [x + button_w + gap, y, button_w, button_h],
             IDCANCEL,
             font,
         );
@@ -341,5 +378,20 @@ pub fn error_box(text: &str) {
             title.as_ptr(),
             MB_OK | MB_ICONERROR | MB_SETFOREGROUND,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lengths_scale_with_the_dpi_and_round_to_the_nearest_pixel() {
+        assert_eq!(scaled(280, 96), 280);
+        assert_eq!(scaled(280, 144), 420);
+        assert_eq!(scaled(188, 120), 235);
+        assert_eq!(scaled(1, 120), 1); // 1.25
+        assert_eq!(scaled(3, 120), 4); // 3.75
+        assert_eq!(scaled(0, 192), 0);
     }
 }

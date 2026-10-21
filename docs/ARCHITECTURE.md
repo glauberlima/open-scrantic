@@ -80,6 +80,13 @@ code and the `.scr` has no command line besides what Windows passes.
 - The preview is a borderless child window of the preview pane (`windows_ui::preview_attributes`): silent, no exit on
   input, never saves progress, and it ends when its parent window is gone (`App::about_to_wait`). It does not take
   part in the single-instance check (`windows_ui::already_running`, a `Local\` named mutex).
+- Where the picture goes is `Surface` in `main.rs`: `Window` and `Fullscreen` (chosen by `cli`, or `Fullscreen` always by
+  `saver`) and `Embedded(hwnd)` for the preview, which draws into the pane Windows gives. Centering, the cursor,
+  the input guard, the sound and saving progress all follow from it.
+- The settings dialog lays out in 96-DPI units scaled by the DPI of the monitor it opens on (`windows_ui::scaled`,
+  `monitor_dpi`), with the font Windows uses for its own dialogs at that DPI. The `/c` process sets per-monitor
+  awareness itself, since it shows only the dialog; a run gets it from winit. The dialog is not rescaled if it is
+  dragged to a monitor with another DPI.
 - Files: `data_dirs()` searches the folder of the `.scr` and then `%APPDATA%\OpenScrantic` (`user_dir()`), because
   Windows installs only the `.scr` into `System32`. `assets::locate` picks the first folder with `SCRANTIC.SCR`,
   and `SCRANTIC.INI` is always read and written in that same folder (`settings_dir()`). Without an install `/c` has
