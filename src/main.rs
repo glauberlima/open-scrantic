@@ -32,6 +32,19 @@ use open_scrantic::{assets, audio};
 /// The title screen stays up while the 1992 machine loaded the first session.
 const INTRO_HOLD: Duration = Duration::from_secs(2);
 
+/// Where the picture is shown.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Surface {
+    /// A window the user can move and resize; it closes with Esc.
+    Window,
+    /// The whole screen, without a cursor.
+    Fullscreen,
+    /// The preview pane of the Screen Saver Settings window (the handle Windows passes after `/p`): a child
+    /// window that fills the pane.
+    #[cfg(feature = "screensaver")]
+    Embedded(isize),
+}
+
 struct App {
     engine: Engine,
     audio: Option<audio::Audio>,
@@ -40,13 +53,11 @@ struct App {
     start: Instant,
     steps: u64,
     ticks: u64,
-    fullscreen: bool,
+    /// Where the picture is shown.
+    target: Surface,
     /// Ends the run at the first sign of the user (screensaver build only; a preview has none).
     #[cfg(feature = "screensaver")]
     input: Option<saver::InputGuard>,
-    /// The preview pane of the Screen Saver Settings window this run draws into, if it is the preview.
-    #[cfg(feature = "screensaver")]
-    preview: Option<isize>,
     dedither: bool,
     /// Settings as they are in the INI, which a run with overrides must write back unchanged.
     saved: Config,
@@ -154,25 +165,30 @@ fn center_on_primary_monitor(window: &Window, event_loop: &ActiveEventLoop) {
 
 impl App {
     fn window_attributes(&self, event_loop: &ActiveEventLoop) -> WindowAttributes {
-        let mut attrs = Window::default_attributes()
-            .with_title("Open Scrantic")
-            .with_min_inner_size(PhysicalSize::new(WIDTH as u32, HEIGHT as u32));
-        if self.fullscreen {
-            attrs = attrs.with_fullscreen(Some(Fullscreen::Borderless(None)));
-        } else {
-            // Largest whole multiple of the original 640x480 that fills at most 80% of the screen.
-            let k = event_loop
-                .primary_monitor()
-                .or_else(|| event_loop.available_monitors().next())
-                .map_or(1, |m| {
-                    let s = m.size();
-                    (s.width * 4 / 5 / WIDTH as u32)
-                        .min(s.height * 4 / 5 / HEIGHT as u32)
-                        .max(1)
-                });
-            attrs = attrs.with_inner_size(PhysicalSize::new(WIDTH as u32 * k, HEIGHT as u32 * k));
+        let attrs = Window::default_attributes().with_title("Open Scrantic");
+        let min = PhysicalSize::new(WIDTH as u32, HEIGHT as u32);
+        match self.target {
+            Surface::Fullscreen => attrs
+                .with_min_inner_size(min)
+                .with_fullscreen(Some(Fullscreen::Borderless(None))),
+            Surface::Window => {
+                // Largest whole multiple of the original 640x480 that fills at most 80% of the screen.
+                let k = event_loop
+                    .primary_monitor()
+                    .or_else(|| event_loop.available_monitors().next())
+                    .map_or(1, |m| {
+                        let s = m.size();
+                        (s.width * 4 / 5 / WIDTH as u32)
+                            .min(s.height * 4 / 5 / HEIGHT as u32)
+                            .max(1)
+                    });
+                attrs
+                    .with_min_inner_size(min)
+                    .with_inner_size(PhysicalSize::new(WIDTH as u32 * k, HEIGHT as u32 * k))
+            }
+            #[cfg(feature = "screensaver")]
+            Surface::Embedded(parent) => windows_ui::preview_attributes(parent),
         }
-        attrs
     }
 }
 
@@ -181,12 +197,6 @@ impl ApplicationHandler for App {
         if self.window.is_some() {
             return;
         }
-        #[cfg(feature = "screensaver")]
-        let attrs = match self.preview {
-            Some(parent) => windows_ui::preview_attributes(parent),
-            None => self.window_attributes(event_loop),
-        };
-        #[cfg(not(feature = "screensaver"))]
         let attrs = self.window_attributes(event_loop);
         let window = match event_loop.create_window(attrs) {
             Ok(w) => Rc::new(w),
@@ -196,10 +206,10 @@ impl ApplicationHandler for App {
                 return;
             }
         };
-        if !self.fullscreen {
+        if self.target == Surface::Window {
             center_on_primary_monitor(&window, event_loop);
         }
-        window.set_cursor_visible(!self.fullscreen);
+        window.set_cursor_visible(self.target == Surface::Window);
         let surface = softbuffer::Context::new(Rc::clone(&window))
             .and_then(|ctx| softbuffer::Surface::new(&ctx, Rc::clone(&window)));
         match surface {
@@ -246,7 +256,9 @@ impl ApplicationHandler for App {
         }
         // The preview ends with the settings window it draws into.
         #[cfg(feature = "screensaver")]
-        if self.preview.is_some_and(|parent| !windows_ui::window_exists(parent)) {
+        if let Surface::Embedded(parent) = self.target
+            && !windows_ui::window_exists(parent)
+        {
             event_loop.exit();
             return;
         }
@@ -264,7 +276,7 @@ impl ApplicationHandler for App {
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
         // A preview must not move the story on: only real runs save their progress.
         #[cfg(feature = "screensaver")]
-        if self.preview.is_some() {
+        if matches!(self.target, Surface::Embedded(_)) {
             return;
         }
         let mut cfg = self.engine.config.clone();
@@ -309,11 +321,9 @@ fn main() {
         start: Instant::now(),
         steps: 0,
         ticks: 0,
-        fullscreen: opts.fullscreen,
+        target: opts.surface(),
         #[cfg(feature = "screensaver")]
-        input: opts.preview.is_none().then(saver::InputGuard::default),
-        #[cfg(feature = "screensaver")]
-        preview: opts.preview,
+        input: opts.input_guard(),
         dedither: opts.dedither,
         saved,
         screenshot: false,

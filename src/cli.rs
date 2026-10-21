@@ -4,6 +4,8 @@
 use open_scrantic::engine::config::Config;
 use open_scrantic::{assets, audio};
 
+use crate::Surface;
+
 const USAGE: &str = "\
 Usage: open-scrantic [--fullscreen] [--dedither] [--soft-audio] [--background=0|1] [--clouds=0|1]
                      [--waves=0|1] [--sounds=0|1]
@@ -41,7 +43,7 @@ impl Overrides {
 }
 
 pub struct Options {
-    pub fullscreen: bool,
+    fullscreen: bool,
     pub dedither: bool,
     pub soft_audio: bool,
     overrides: Overrides,
@@ -64,6 +66,15 @@ impl Options {
     /// Reports that the screensaver files could not be loaded and exits.
     pub fn fail_data(&self, e: assets::AssetError) -> ! {
         self.fail(e)
+    }
+
+    /// Where the picture is shown: a window, or the whole screen with `--fullscreen`.
+    pub fn surface(&self) -> Surface {
+        if self.fullscreen {
+            Surface::Fullscreen
+        } else {
+            Surface::Window
+        }
     }
 
     /// The sound output.

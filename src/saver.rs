@@ -8,6 +8,8 @@ use winit::event::{ElementState, WindowEvent};
 
 use open_scrantic::engine::config::Config;
 use open_scrantic::windows_ui;
+
+use crate::Surface;
 use open_scrantic::{assets, audio};
 
 /// What the program does for the arguments Windows passed.
@@ -24,12 +26,11 @@ enum Mode {
 }
 
 pub struct Options {
-    /// Fills its window: no centering, no cursor. The preview takes this path too, as it fills its pane.
-    pub fullscreen: bool,
+    /// The whole screen for a run, the preview pane for `/p`. A preview is silent and neither ends on input
+    /// nor saves progress.
+    surface: Surface,
     pub dedither: bool,
     pub soft_audio: bool,
-    /// The preview pane this run draws into (`/p`); it is silent and neither ends on input nor saves progress.
-    pub preview: Option<isize>,
 }
 
 impl Options {
@@ -41,7 +42,7 @@ impl Options {
     /// Reports a fatal error and exits. Windows gives a screensaver no console, so it goes in a message box;
     /// a preview stays silent, as the box would pop up in the settings window every time it opens.
     pub fn fail(&self, e: impl std::fmt::Display) -> ! {
-        if self.preview.is_none() {
+        if self.surface == Surface::Fullscreen {
             windows_ui::error_box(&e.to_string());
         }
         std::process::exit(1);
@@ -52,22 +53,30 @@ impl Options {
         self.fail(data_error_message(&e))
     }
 
+    /// Where the picture is shown.
+    pub fn surface(&self) -> Surface {
+        self.surface
+    }
+
+    /// Watches for the user's input; the preview ends only with its pane.
+    pub fn input_guard(&self) -> Option<InputGuard> {
+        (self.surface == Surface::Fullscreen).then(InputGuard::default)
+    }
+
     /// The sound output; a preview has none.
     pub fn audio(&self) -> Option<audio::Audio> {
-        if self.preview.is_some() {
-            None
-        } else {
-            audio::Audio::new(self.soft_audio)
+        match self.surface {
+            Surface::Fullscreen => audio::Audio::new(self.soft_audio),
+            _ => None,
         }
     }
 }
 
 /// The screensaver always runs fullscreen with the image and sound improvements on.
 const OPTIONS: Options = Options {
-    fullscreen: true,
+    surface: Surface::Fullscreen,
     dedither: true,
     soft_audio: true,
-    preview: None,
 };
 
 /// `/c:1234`, `/p 1234` and `/p:1234` carry a window handle; the part after the colon is `inline`,
@@ -110,7 +119,7 @@ pub fn start() -> Option<Options> {
         Mode::Run if windows_ui::already_running() => None,
         Mode::Run => Some(OPTIONS),
         Mode::Preview(parent) => Some(Options {
-            preview: Some(parent),
+            surface: Surface::Embedded(parent),
             soft_audio: false,
             ..OPTIONS
         }),
