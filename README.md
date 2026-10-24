@@ -19,8 +19,8 @@ back to modern computers: a free, open-source Rust reimplementation of the class
 screensaver. Watch Johnny go about his days on his tiny island while a story unfolds from
 one day to the next, with the same behavior as the original.
 
-[Get started](#get-started) · [Settings](#settings) · [FAQ](#faq) · [Why](#why-this-exists) ·
-[For developers](#for-developers) · [AI disclosure](#ai-disclosure) · [Legal](#legal-notice)
+[Get started](#get-started) · [Windows screensaver](#install-as-a-windows-screensaver) ·
+[Settings](#settings) · [FAQ](#faq) · [Why](#why-this-exists) · [For developers](#for-developers) · [AI disclosure](#ai-disclosure) · [Legal](#legal-notice)
 
 > [!IMPORTANT]
 > You need your own copy of the original screensaver files. This project does not include them
@@ -42,40 +42,9 @@ one day to the next, with the same behavior as the original.
 3. **Run it.** It opens in a window; press **Esc** to exit. Start it with `--fullscreen` to fill the
    screen. **F12** saves a screenshot (`-raw` as drawn, `-view` as shown) next to the executable.
 
-<details>
-<summary>Use it as a Windows screensaver</summary>
-
-Download `open-scrantic-windows-x64.scr` instead of the `.exe`. It is a separate build made for Windows
-to run: it takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and has none of the options
-above.
-
-To make it appear in the **Screen Saver Settings** list:
-
-1. Put `SCRANTIC.SCR`, `RESOURCE.MAP` and `RESOURCE.001` in `%APPDATA%\OpenScrantic`
-   (`C:\Users\<you>\AppData\Roaming\OpenScrantic`; create the folder if it does not exist).
-2. Copy the `.scr` into `C:\Windows\System32`, which needs administrator rights. Open PowerShell as
-   administrator and run, in the folder you downloaded it to:
-   `Copy-Item .\open-scrantic-windows-x64.scr C:\Windows\System32\OpenScrantic.scr`
-3. Open **Screen Saver Settings** (Settings, Personalization, Lock screen, Screen saver settings), pick
-   **Open Scrantic** and set the wait time.
-
-Windows lists only the screensavers that are in `System32`. The `.scr` looks for the three original files
-beside itself first and then in `%APPDATA%\OpenScrantic`; the first folder that has `SCRANTIC.SCR` is the
-install, and `SCRANTIC.INI` is always read and written in that same folder (so nothing is ever written to
-`System32`). If the files are missing, the screensaver says where to put them and creates that folder.
-
-To remove it, delete `C:\Windows\System32\OpenScrantic.scr` (as administrator) and the
-`%APPDATA%\OpenScrantic` folder.
-
-When Windows starts it (`/s`) it runs fullscreen with `--dedither` and `--soft-audio` already on, and exits
-on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background, Clouds,
-Waves and Sounds checkboxes, saved to `SCRANTIC.INI`, and **Preview** draws the island, silent, in the
-monitor picture of the Screen Saver Settings window. To try it without installing, right-click the `.scr`
-and choose **Test**.
-
-The regular program does not know these switches. On macOS and Linux there is no screensaver build.
-
-</details>
+> [!TIP]
+> On Windows and want it as a real screensaver? Jump to
+> [Install as a Windows screensaver](#install-as-a-windows-screensaver).
 
 <details>
 <summary>Your system refuses to open the file?</summary>
@@ -88,6 +57,50 @@ The program is not code-signed, so your system may warn about it.
   `./open-scrantic-macos`.
 - **Linux:** run `chmod +x open-scrantic-linux-x64`, then `./open-scrantic-linux-x64`. If it complains
   about a missing sound library, install ALSA (`libasound2` on Debian and Ubuntu).
+
+</details>
+
+## Install as a Windows screensaver
+
+Use the `open-scrantic-windows-x64.scr` file from the
+[latest release](https://github.com/glauberlima/open-scrantic/releases/latest) (not the `.exe`). You
+also need the three [original files](#what-you-need).
+
+1. **Open PowerShell as administrator** (Start menu, type `PowerShell`, right-click, **Run as
+   administrator**) and go to the folder that has the downloaded `.scr` and the three original files, for
+   example `cd $env:USERPROFILE\Downloads`.
+2. **Paste this**:
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:APPDATA\OpenScrantic" | Out-Null
+   Copy-Item SCRANTIC.SCR, RESOURCE.MAP, RESOURCE.001 "$env:APPDATA\OpenScrantic"
+   Copy-Item .\open-scrantic-windows-x64.scr C:\Windows\System32\OpenScrantic.scr
+   ```
+
+3. **Pick it**: open **Screen Saver Settings** (Settings, Personalization, Lock screen, Screen saver
+   settings), choose **OpenScrantic** and set the wait time. Click **Preview** to check it.
+
+That is all. To try it first without installing, right-click the `.scr` and choose **Test**.
+
+<details>
+<summary>Details, settings and uninstall</summary>
+
+- The three original files go in `%APPDATA%\OpenScrantic` (`C:\Users\<you>\AppData\Roaming\OpenScrantic`),
+  because Windows only lists screensavers that are in `System32`. The `.scr` looks for them beside itself
+  first and then there; the first folder that has `SCRANTIC.SCR` is the install, and `SCRANTIC.INI` is
+  always read and written in that same folder (so nothing is ever written to `System32`). If the files are
+  missing, the screensaver says where to put them and creates that folder.
+- If your administrator account is not the one you use every day, `%APPDATA%` in step 2 points to the
+  administrator's profile; copy the three files to your own `%APPDATA%\OpenScrantic` instead.
+- When Windows starts it (`/s`) it runs fullscreen with `--dedither` and `--soft-audio` already on, and
+  exits on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background,
+  Clouds, Waves and Sounds checkboxes, saved to `SCRANTIC.INI`, and **Preview** (`/p`) draws the island,
+  silent, in the monitor picture of the Screen Saver Settings window.
+- This build takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and none of the options of the
+  regular program. On macOS and Linux there is no screensaver build.
+- To remove it, delete `C:\Windows\System32\OpenScrantic.scr` (as administrator) and the
+  `%APPDATA%\OpenScrantic` folder.
+- SmartScreen warning? See [Your system refuses to open the file?](#get-started).
 
 </details>
 
