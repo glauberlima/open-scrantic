@@ -45,7 +45,7 @@ jobs:
         run: |
           rustup toolchain install
           rustup component add clippy
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       # Lints are denied in Cargo.toml [lints]; any warning fails the build.
       - run: cargo clippy --all-targets
 
@@ -71,7 +71,7 @@ jobs:
         run: |
           rustup toolchain install
           rustup component add clippy
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo test
       # The Windows screensaver flavor (src/saver.rs, src/windows_ui.rs) exists only on Windows: lint and test it there.
       - name: Lint the screensaver flavor
@@ -101,7 +101,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo build --release
       - name: Smoke test binary
         run: |

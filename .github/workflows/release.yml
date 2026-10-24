@@ -59,7 +59,7 @@ jobs:
         run: |
           rustup toolchain install
           rustup target add x86_64-apple-darwin aarch64-apple-darwin
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo build --release --target x86_64-apple-darwin
       - run: cargo build --release --target aarch64-apple-darwin
       - name: Create universal binary
@@ -88,7 +88,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo build --release
       - run: cp target/release/open-scrantic open-scrantic-linux-x64
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -111,7 +111,7 @@ jobs:
           persist-credentials: false
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo build --release
       - run: cp target/release/open-scrantic.exe open-scrantic-windows-x64.exe
       # The screensaver flavor: it understands only the switches Windows passes (see README).
