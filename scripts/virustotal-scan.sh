@@ -12,7 +12,7 @@ scan_binary() {
 
   echo "Uploading $name to VirusTotal..." >&2
   local body http_code
-  body=$(curl -sSL \
+  body=$(curl -sS \
     --request POST \
     --url "https://www.virustotal.com/api/v3/files" \
     --header "x-apikey: ${VT_API_KEY}" \
@@ -41,7 +41,7 @@ scan_binary() {
     echo "  Poll attempt $attempt/$max_attempts..." >&2
 
     local analysis_response status
-    analysis_response=$(curl -fsSL \
+    analysis_response=$(curl -fsS \
       --request GET \
       --url "https://www.virustotal.com/api/v3/analyses/${analysis_id}" \
       --header "x-apikey: ${VT_API_KEY}")
