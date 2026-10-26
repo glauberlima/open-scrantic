@@ -17,6 +17,13 @@ const TAG_FIRST_RUN: u16 = 8;
 /// making each tick quadratic in the script size.
 const MAX_DEPTH: u32 = 32;
 
+/// Most TTMs one ADS may list; the installed ones list at most 6.
+const MAX_ADS_TTMS: usize = 16;
+
+/// Most instructions across the TTMs of one ADS; the installed ones total at most 5,995. A list that names one
+/// TTM many times would otherwise decode it that many times.
+const MAX_ADS_OPS: usize = 250_000;
+
 /// Tag states (low bits of `Tag::state`).
 const TAG_RUNNING: u16 = 1;
 const TAG_STOPPED: u16 = 2;
@@ -57,10 +64,18 @@ fn is_condition(op: u16) -> bool {
 impl AdsRuntime {
     pub fn load(archive: &Archive, id: u8, name: &str) -> Result<Self> {
         let Ads { ttms: list, script } = archive.ads(name)?;
+        if list.len() > MAX_ADS_TTMS {
+            return Err(AssetError::Format(format!("{name}: too many TTMs")));
+        }
         let mut ttms = Vec::new();
         let mut scenes = Vec::new();
+        let mut ops = 0;
         for (slot, ttm_name) in list {
             let ttm = archive.ttm(&ttm_name)?;
+            ops += ttm.frames.iter().map(Vec::len).sum::<usize>();
+            if ops > MAX_ADS_OPS {
+                return Err(AssetError::Format(format!("{name}: TTMs too large")));
+            }
             for &(tag, frame) in &ttm.scenes {
                 scenes.push(Scene::new(ttms.len(), slot, tag, frame));
             }
@@ -598,37 +613,26 @@ impl AdsRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assets::resource::fixtures::*;
 
-    fn chunk(tag: &[u8; 4], body: &[u8]) -> Vec<u8> {
-        let mut v = tag.to_vec();
-        v.extend_from_slice(&(body.len() as u32).to_le_bytes());
-        v.extend_from_slice(body);
-        v
-    }
-
-    /// Method 1 (RLE) payload holding `data` as literal runs.
-    fn rle(data: &[u8]) -> Vec<u8> {
-        let mut v = vec![1u8];
-        v.extend_from_slice(&(data.len() as u32).to_le_bytes());
-        for c in data.chunks(0x7F) {
-            v.push(c.len() as u8);
-            v.extend_from_slice(c);
+    /// An archive with one ADS, `A.ADS`, that lists `ttms` as (slot, name) and has the given script, plus
+    /// `extra` entries.
+    fn archive_with(script: &[u8], ttms: &[(u16, &str)], extra: &[(&str, Vec<u8>)]) -> Archive {
+        let mut res = (ttms.len() as u16).to_le_bytes().to_vec();
+        for (slot, name) in ttms {
+            res.extend_from_slice(&slot.to_le_bytes());
+            res.extend_from_slice(name.as_bytes());
+            res.push(0);
         }
-        v
+        let mut body = chunk(b"RES:", &res);
+        body.extend(chunk(b"SCR:", &rle(script)));
+        let mut entries = vec![("A.ADS", body)];
+        entries.extend(extra.iter().map(|(n, b)| (*n, b.clone())));
+        archive_of(&entries)
     }
 
-    /// An archive with one ADS, `A.ADS`, that has no TTMs and the given script.
     fn archive_with_script(script: &[u8]) -> Archive {
-        let mut body = chunk(b"RES:", &[0, 0]);
-        body.extend(chunk(b"SCR:", &rle(script)));
-        let mut volume = vec![0u8; 13];
-        volume[..5].copy_from_slice(b"A.ADS");
-        volume.extend_from_slice(&(body.len() as u32).to_le_bytes());
-        volume.extend(body);
-        let mut map = vec![0u8; 21];
-        map[19] = 1;
-        map.extend_from_slice(&[0; 8]);
-        Archive::new(&map, &volume).unwrap()
+        archive_with(script, &[], &[])
     }
 
     /// Tag 1 holding `ops`, ended by the 0xFFFF separator.
@@ -734,5 +738,25 @@ mod tests {
         }
         // Each level costs an `exec` and, when skipping, a `skip_block`.
         assert!(2 * deepest as u32 + 2 <= MAX_DEPTH, "deepest nesting {deepest}");
+    }
+
+    #[test]
+    fn an_ads_listing_one_ttm_many_times_is_rejected() {
+        let t = ("T.TTM", ttm_body(1, &[0x0FF0; 4]));
+        let few: Vec<(u16, &str)> = (0..MAX_ADS_TTMS as u16).map(|i| (i, "T.TTM")).collect();
+        assert!(AdsRuntime::load(&archive_with(&script(&[]), &few, std::slice::from_ref(&t)), 1, "A.ADS").is_ok());
+        let many: Vec<(u16, &str)> = (0..=MAX_ADS_TTMS as u16).map(|i| (i, "T.TTM")).collect();
+        assert!(AdsRuntime::load(&archive_with(&script(&[]), &many, &[t]), 1, "A.ADS").is_err());
+    }
+
+    #[test]
+    fn ttms_that_are_large_together_are_rejected() {
+        // Each TTM is within its own limit; four references to it are not within the ADS's.
+        let ops = vec![0x0110u16; 90_000];
+        let t = ("T.TTM", ttm_body(1, &ops));
+        let one = [(0u16, "T.TTM")];
+        assert!(AdsRuntime::load(&archive_with(&script(&[]), &one, std::slice::from_ref(&t)), 1, "A.ADS").is_ok());
+        let four = [(0u16, "T.TTM"), (1, "T.TTM"), (2, "T.TTM"), (3, "T.TTM")];
+        assert!(AdsRuntime::load(&archive_with(&script(&[]), &four, &[t]), 1, "A.ADS").is_err());
     }
 }

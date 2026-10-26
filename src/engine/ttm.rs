@@ -7,6 +7,10 @@ use super::Env;
 use super::gfx::{Canvas, Clip, HEIGHT, WIDTH};
 use crate::assets::resource::{Bmp, Op, Ttm};
 
+/// Most picture / bitmap loads (0xF01F, 0xF02F) one frame may perform; the installed frames do at most 6. Each
+/// load decodes an archive entry, so a frame full of them would stall a step.
+const MAX_LOADS_PER_FRAME: u32 = 32;
+
 /// A loaded TTM script with its bitmap slots (shared by all scenes of the script).
 pub struct TtmCtx {
     pub ttm: Ttm,
@@ -167,6 +171,7 @@ pub fn run_frame(ctx: &mut TtmCtx, scene: &mut Scene, env: &mut Env<'_>) -> Opti
         goto: None,
     };
     let (ox, oy) = env.offset;
+    let mut loads = 0;
 
     for op in ops {
         let mut a = [op.arg(0), op.arg(1), op.arg(2), op.arg(3), op.arg(4), op.arg(5)];
@@ -269,7 +274,11 @@ pub fn run_frame(ctx: &mut TtmCtx, scene: &mut Scene, env: &mut Env<'_>) -> Opti
                 }
             }
             0xF01F => {
-                if !skip && let Some(name) = &op.text {
+                loads += 1;
+                if !skip
+                    && loads <= MAX_LOADS_PER_FRAME
+                    && let Some(name) = &op.text
+                {
                     match env.archive.scr(name) {
                         Ok(pic) => {
                             env.work.load_picture(&pic);
@@ -280,7 +289,11 @@ pub fn run_frame(ctx: &mut TtmCtx, scene: &mut Scene, env: &mut Env<'_>) -> Opti
                 }
             }
             0xF02F => {
-                if !skip && let Some(name) = &op.text {
+                loads += 1;
+                if !skip
+                    && loads <= MAX_LOADS_PER_FRAME
+                    && let Some(name) = &op.text
+                {
                     let bmp = if name.eq_ignore_ascii_case("JOHNWALK.BMP") {
                         Some(Rc::clone(env.johnwalk))
                     } else {
@@ -300,4 +313,53 @@ pub fn run_frame(ctx: &mut TtmCtx, scene: &mut Scene, env: &mut Env<'_>) -> Opti
         }
     }
     Some(res)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::assets::resource::fixtures::archive_of;
+    use crate::engine::rng::Rng;
+
+    fn op(code: u16, args: [i16; 6], text: Option<&str>) -> Op {
+        Op {
+            code,
+            args,
+            text: text.map(String::from),
+        }
+    }
+
+    #[test]
+    fn a_frame_performs_a_bounded_number_of_loads() {
+        // MAX_LOADS_PER_FRAME loads into slot 0, then one more into slot 1 that must not happen.
+        let mut ops: Vec<Op> = (0..MAX_LOADS_PER_FRAME)
+            .map(|_| op(0xF02F, [0; 6], Some("JOHNWALK.BMP")))
+            .collect();
+        ops.push(op(0x1051, [1, 0, 0, 0, 0, 0], None));
+        ops.push(op(0xF02F, [0; 6], Some("JOHNWALK.BMP")));
+        ops.push(op(0x0FF0, [0; 6], None));
+        let mut ctx = TtmCtx::new(Ttm {
+            frames: vec![ops],
+            scenes: vec![],
+        });
+        let archive = archive_of(&[]);
+        let johnwalk = Rc::new(Bmp { sprites: vec![] });
+        let (mut work, mut bg, mut front) = (Canvas::default(), Canvas::default(), Canvas::default());
+        let (mut rng, mut sounds) = (Rng::new([0; 56], 24, 55), Vec::new());
+        let mut env = Env {
+            work: &mut work,
+            bg: &mut bg,
+            front: &mut front,
+            archive: &archive,
+            johnwalk: &johnwalk,
+            rng: &mut rng,
+            sounds: &mut sounds,
+            offset: (0, 0),
+            now: 0,
+        };
+        let mut scene = Scene::new(0, 0, 0, 0);
+        run_frame(&mut ctx, &mut scene, &mut env).expect("frame 0 exists");
+        assert!(ctx.bmps[0].is_some());
+        assert!(ctx.bmps[1].is_none(), "load past the per-frame limit was performed");
+    }
 }

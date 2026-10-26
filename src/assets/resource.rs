@@ -4,6 +4,12 @@ use std::collections::HashMap;
 
 use super::{AssetError, Result, bytes, u16_at, u32_at};
 
+/// Most instructions one TTM may hold; the installed ones have at most 2368.
+const MAX_TTM_OPS: usize = 100_000;
+
+/// Most pixels one BMP may hold across its sprites; the installed ones have at most 277,048.
+const MAX_BMP_PIXELS: usize = 2 << 20;
+
 /// Largest decompressed payload accepted; the real ones are a few hundred KB.
 const MAX_UNPACKED: usize = 16 << 20;
 
@@ -82,6 +88,15 @@ impl Archive {
         let c = self.chunks(name)?;
         let inf = Self::chunk(&c, name, "INF:")?;
         let count = u16_at(inf, 0)? as usize;
+        let mut total = 0usize;
+        for i in 0..count {
+            let w = u16_at(inf, 2 + i * 2)? as usize;
+            let h = u16_at(inf, 2 + count * 2 + i * 2)? as usize;
+            total += w * h;
+            if total > MAX_BMP_PIXELS {
+                return Err(AssetError::Format(format!("{name}: image too large")));
+            }
+        }
         let pixels = decompress(Self::chunk(&c, name, "BIN:")?)?;
         let mut sprites = Vec::with_capacity(count);
         let mut nibble = 0usize;
@@ -206,6 +221,7 @@ impl Ttm {
     fn parse(code: &[u8], pages: usize) -> Result<Self> {
         let mut frames = vec![Vec::new()];
         let mut scenes = Vec::new();
+        let mut op_count = 0;
         let mut p = 0;
         while p + 2 <= code.len() {
             let opcode = u16_at(code, p)?;
@@ -233,6 +249,10 @@ impl Ttm {
                     op.args[i] = u16_at(code, p + i * 2)? as i16;
                 }
                 p += nargs * 2;
+            }
+            op_count += 1;
+            if op_count > MAX_TTM_OPS {
+                return Err(AssetError::Format("TTM has too many instructions".into()));
             }
             if opcode == 0x1111 {
                 scenes.push((op.args[0] as u16, frames.len() - 1));
@@ -385,8 +405,57 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
     out
 }
 
+/// Builders for synthetic archives, shared by the tests of this crate.
+#[cfg(test)]
+pub(crate) mod fixtures {
+    use super::Archive;
+
+    pub fn chunk(tag: &[u8; 4], body: &[u8]) -> Vec<u8> {
+        let mut v = tag.to_vec();
+        v.extend_from_slice(&(body.len() as u32).to_le_bytes());
+        v.extend_from_slice(body);
+        v
+    }
+
+    /// Method 1 (RLE) payload holding `data` as literal runs.
+    pub fn rle(data: &[u8]) -> Vec<u8> {
+        let mut v = vec![1u8];
+        v.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        for c in data.chunks(0x7F) {
+            v.push(c.len() as u8);
+            v.extend_from_slice(c);
+        }
+        v
+    }
+
+    /// An archive of `(name, body)` entries laid out one after the other.
+    pub fn archive_of(entries: &[(&str, Vec<u8>)]) -> Archive {
+        let (mut volume, mut map) = (Vec::new(), vec![0u8; 21]);
+        map[19..21].copy_from_slice(&(entries.len() as u16).to_le_bytes());
+        for (name, body) in entries {
+            map.extend_from_slice(&[0; 4]);
+            map.extend_from_slice(&(volume.len() as u32).to_le_bytes());
+            let mut header = [0u8; 13];
+            header[..name.len()].copy_from_slice(name.as_bytes());
+            volume.extend_from_slice(&header);
+            volume.extend_from_slice(&(body.len() as u32).to_le_bytes());
+            volume.extend_from_slice(body);
+        }
+        Archive::new(&map, &volume).unwrap()
+    }
+
+    /// TTM entry body: `pages` pages and the given 2-byte (no argument) opcodes.
+    pub fn ttm_body(pages: u16, ops: &[u16]) -> Vec<u8> {
+        let code: Vec<u8> = ops.iter().flat_map(|op| op.to_le_bytes()).collect();
+        let mut body = chunk(b"PAG:", &pages.to_le_bytes());
+        body.extend(chunk(b"TT3:", &rle(&code)));
+        body
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::fixtures::{self, *};
     use super::*;
 
     /// A volume of `vol` bytes with a header every 17 bytes whose size runs to the end of the volume,
@@ -520,5 +589,26 @@ mod tests {
             }
         }
         assert!(streams > 0);
+    }
+
+    #[test]
+    fn a_ttm_with_too_many_instructions_is_rejected() {
+        let ops = vec![0x0110u16; MAX_TTM_OPS + 1];
+        let archive = archive_of(&[("T.TTM", ttm_body(1, &ops))]);
+        assert!(archive.ttm("T.TTM").is_err());
+        let ok = archive_of(&[("T.TTM", ttm_body(1, &ops[..MAX_TTM_OPS]))]);
+        assert!(ok.ttm("T.TTM").is_ok());
+    }
+
+    #[test]
+    fn a_bitmap_with_too_many_pixels_is_rejected() {
+        // One 2000 x 2000 sprite; the pixel data is short and reads as zeros.
+        let mut inf = 1u16.to_le_bytes().to_vec();
+        inf.extend_from_slice(&2000u16.to_le_bytes());
+        inf.extend_from_slice(&2000u16.to_le_bytes());
+        let mut body = chunk(b"INF:", &inf);
+        body.extend(chunk(b"BIN:", &fixtures::rle(&[0; 16])));
+        let archive = archive_of(&[("B.BMP", body)]);
+        assert!(archive.bmp("B.BMP").is_err());
     }
 }
