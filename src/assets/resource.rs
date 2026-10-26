@@ -4,11 +4,28 @@ use std::collections::HashMap;
 
 use super::{AssetError, Result, bytes, u16_at, u32_at};
 
+/// Most instructions one TTM may hold; the installed ones have at most 2368.
+const MAX_TTM_OPS: usize = 100_000;
+
+/// Most pixels one BMP may hold across its sprites; the installed ones have at most 277,048.
+const MAX_BMP_PIXELS: usize = 2 << 20;
+
 /// Largest decompressed payload accepted; the real ones are a few hundred KB.
 const MAX_UNPACKED: usize = 16 << 20;
 
 pub struct Archive {
-    files: HashMap<String, Vec<u8>>,
+    /// The whole RESOURCE.001, kept once: entries may overlap, so they are ranges into it, never copies.
+    volume: Vec<u8>,
+    /// Upper-case name -> (start, len) of the entry's data in `volume`.
+    files: HashMap<String, (usize, usize)>,
+}
+
+#[cfg(test)]
+impl Archive {
+    /// Bytes of resource data this archive owns.
+    fn retained_bytes(&self) -> usize {
+        self.volume.len()
+    }
 }
 
 impl Archive {
@@ -26,18 +43,23 @@ impl Archive {
             let name_end = header[..13].iter().position(|&b| b == 0).unwrap_or(13);
             let name = String::from_utf8_lossy(&header[..name_end]).to_ascii_uppercase();
             let size = u32_at(header, 13)? as usize;
-            let data = bytes(volume, offset + 17, size)
-                .map_err(|_| AssetError::Format(format!("{name}: data out of range")))?;
-            files.insert(name, data.to_vec());
+            bytes(volume, offset + 17, size).map_err(|_| AssetError::Format(format!("{name}: data out of range")))?;
+            files.insert(name, (offset + 17, size));
         }
-        Ok(Self { files })
+        Ok(Self {
+            volume: volume.to_vec(),
+            files,
+        })
+    }
+
+    /// The data of the entry called `name` (case-insensitive).
+    fn data(&self, name: &str) -> Option<&[u8]> {
+        let &(start, len) = self.files.get(&name.to_ascii_uppercase())?;
+        self.volume.get(start..start + len)
     }
 
     fn chunks(&self, name: &str) -> Result<HashMap<String, &[u8]>> {
-        let data = self
-            .files
-            .get(&name.to_ascii_uppercase())
-            .ok_or_else(|| AssetError::Missing(name.to_string()))?;
+        let data = self.data(name).ok_or_else(|| AssetError::Missing(name.to_string()))?;
         let mut out = HashMap::new();
         let mut p = 0;
         while p + 8 <= data.len() {
@@ -66,6 +88,15 @@ impl Archive {
         let c = self.chunks(name)?;
         let inf = Self::chunk(&c, name, "INF:")?;
         let count = u16_at(inf, 0)? as usize;
+        let mut total = 0usize;
+        for i in 0..count {
+            let w = u16_at(inf, 2 + i * 2)? as usize;
+            let h = u16_at(inf, 2 + count * 2 + i * 2)? as usize;
+            total += w * h;
+            if total > MAX_BMP_PIXELS {
+                return Err(AssetError::Format(format!("{name}: image too large")));
+            }
+        }
         let pixels = decompress(Self::chunk(&c, name, "BIN:")?)?;
         let mut sprites = Vec::with_capacity(count);
         let mut nibble = 0usize;
@@ -190,6 +221,7 @@ impl Ttm {
     fn parse(code: &[u8], pages: usize) -> Result<Self> {
         let mut frames = vec![Vec::new()];
         let mut scenes = Vec::new();
+        let mut op_count = 0;
         let mut p = 0;
         while p + 2 <= code.len() {
             let opcode = u16_at(code, p)?;
@@ -217,6 +249,10 @@ impl Ttm {
                     op.args[i] = u16_at(code, p + i * 2)? as i16;
                 }
                 p += nargs * 2;
+            }
+            op_count += 1;
+            if op_count > MAX_TTM_OPS {
+                return Err(AssetError::Format("TTM has too many instructions".into()));
             }
             if opcode == 0x1111 {
                 scenes.push((op.args[0] as u16, frames.len() - 1));
@@ -307,6 +343,12 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
     let mut suffix = vec![0u8; 4096];
     let (mut nbits, mut free, mut bitpos) = (9u32, 257usize, 0u32);
     let Some(first) = get(nbits) else { return out };
+    if first > 255 {
+        // The first code must be a literal. A dictionary code here leaves slot `first` pointing at itself
+        // once the dictionary grows to it, and decoding that code would never end; every installed stream
+        // starts with a literal.
+        return out;
+    }
     let (mut old, mut last) = (first as usize, first as u8);
     out.push(last);
     let mut stack = Vec::with_capacity(4096);
@@ -339,6 +381,9 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
             code = old;
         }
         while code > 255 {
+            if stack.len() > 4096 {
+                return out; // a chain longer than the dictionary is a cycle: corrupt stream
+            }
             stack.push(suffix[code]);
             code = prefix[code] as usize;
         }
@@ -358,4 +403,212 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
     }
     out.truncate(size);
     out
+}
+
+/// Builders for synthetic archives, shared by the tests of this crate.
+#[cfg(test)]
+pub(crate) mod fixtures {
+    use super::Archive;
+
+    pub fn chunk(tag: &[u8; 4], body: &[u8]) -> Vec<u8> {
+        let mut v = tag.to_vec();
+        v.extend_from_slice(&(body.len() as u32).to_le_bytes());
+        v.extend_from_slice(body);
+        v
+    }
+
+    /// Method 1 (RLE) payload holding `data` as literal runs.
+    pub fn rle(data: &[u8]) -> Vec<u8> {
+        let mut v = vec![1u8];
+        v.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        for c in data.chunks(0x7F) {
+            v.push(c.len() as u8);
+            v.extend_from_slice(c);
+        }
+        v
+    }
+
+    /// An archive of `(name, body)` entries laid out one after the other.
+    pub fn archive_of(entries: &[(&str, Vec<u8>)]) -> Archive {
+        let (mut volume, mut map) = (Vec::new(), vec![0u8; 21]);
+        map[19..21].copy_from_slice(&(entries.len() as u16).to_le_bytes());
+        for (name, body) in entries {
+            map.extend_from_slice(&[0; 4]);
+            map.extend_from_slice(&(volume.len() as u32).to_le_bytes());
+            let mut header = [0u8; 13];
+            header[..name.len()].copy_from_slice(name.as_bytes());
+            volume.extend_from_slice(&header);
+            volume.extend_from_slice(&(body.len() as u32).to_le_bytes());
+            volume.extend_from_slice(body);
+        }
+        Archive::new(&map, &volume).unwrap()
+    }
+
+    /// TTM entry body: `pages` pages and the given 2-byte (no argument) opcodes.
+    pub fn ttm_body(pages: u16, ops: &[u16]) -> Vec<u8> {
+        let code: Vec<u8> = ops.iter().flat_map(|op| op.to_le_bytes()).collect();
+        let mut body = chunk(b"PAG:", &pages.to_le_bytes());
+        body.extend(chunk(b"TT3:", &rle(&code)));
+        body
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::fixtures::{self, *};
+    use super::*;
+
+    /// A volume of `vol` bytes with a header every 17 bytes whose size runs to the end of the volume,
+    /// so every entry overlaps the data of the ones before it, and the map that lists them all.
+    fn overlapping(vol: usize) -> (Vec<u8>, Vec<u8>) {
+        let n = vol / 17 - 1;
+        let mut volume = vec![0x41u8; vol];
+        let mut map = vec![0u8; 21 + n * 8];
+        map[19..21].copy_from_slice(&(n as u16).to_le_bytes());
+        for i in 0..n {
+            let off = i * 17;
+            let name = format!("F{i:05}.TTM");
+            volume[off..off + 13].fill(0);
+            volume[off..off + name.len()].copy_from_slice(name.as_bytes());
+            let size = (vol - off - 17) as u32;
+            volume[off + 13..off + 17].copy_from_slice(&size.to_le_bytes());
+            map[21 + i * 8 + 4..21 + i * 8 + 8].copy_from_slice(&(off as u32).to_le_bytes());
+        }
+        (map, volume)
+    }
+
+    #[test]
+    fn overlapping_entries_do_not_multiply_the_volume() {
+        let vol = 64 << 10;
+        let (map, volume) = overlapping(vol);
+        let archive = Archive::new(&map, &volume).expect("overlapping entries are structurally valid");
+        assert!(
+            archive.retained_bytes() <= vol,
+            "retained {} bytes",
+            archive.retained_bytes()
+        );
+    }
+
+    #[test]
+    fn entries_are_found_by_name() {
+        let mut volume = Vec::new();
+        for (name, body) in [("A.TTM", b"abc".as_slice()), ("B.TTM", b"")] {
+            let mut h = [0u8; 13];
+            h[..name.len()].copy_from_slice(name.as_bytes());
+            volume.extend_from_slice(&h);
+            volume.extend_from_slice(&(body.len() as u32).to_le_bytes());
+            volume.extend_from_slice(body);
+        }
+        let mut map = vec![0u8; 21];
+        map[19] = 2;
+        for off in [0u32, 17 + 3] {
+            map.extend_from_slice(&[0; 4]);
+            map.extend_from_slice(&off.to_le_bytes());
+        }
+        let archive = Archive::new(&map, &volume).unwrap();
+        assert_eq!(archive.data("a.ttm").unwrap(), b"abc");
+        assert_eq!(archive.data("B.TTM").unwrap(), b"");
+    }
+
+    /// LSB-first packer for the 9-bit codes of a fresh LZW stream (method byte 2 + size header).
+    fn lzw_chunk(codes: &[u16], size: u32) -> Vec<u8> {
+        let (mut out, mut buf, mut cnt) = (vec![2u8], 0u32, 0u32);
+        out.extend_from_slice(&size.to_le_bytes());
+        for &c in codes {
+            buf |= (c as u32) << cnt;
+            cnt += 9;
+            while cnt >= 8 {
+                out.push(buf as u8);
+                buf >>= 8;
+                cnt -= 8;
+            }
+        }
+        if cnt > 0 {
+            out.push(buf as u8);
+        }
+        out
+    }
+
+    #[test]
+    fn lzw_dictionary_cycle_from_a_non_literal_first_code_is_an_error() {
+        // The first code is taken as a literal. 300 is not one: its slot is written later with prefix 257 while
+        // slot 257 was written with prefix 300, so decoding code 300 walks 300 -> 257 -> 300 forever.
+        let mut codes = vec![300u16];
+        codes.extend([65u16; 42]); // slots 257..=298
+        codes.extend([257, 65, 300]);
+        let chunk = lzw_chunk(&codes, 1 << 16);
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(decompress(&chunk).is_err());
+        });
+        let result = rx.recv_timeout(std::time::Duration::from_secs(1));
+        assert_eq!(result, Ok(true), "decompress must fail promptly");
+    }
+
+    #[test]
+    fn lzw_random_streams_terminate() {
+        let mut x = 0x2545_F491_4F6C_DD1Du64;
+        let mut next = move || {
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            x
+        };
+        for round in 0..3000 {
+            let src: Vec<u8> = (0..next() % 600)
+                .map(|_| {
+                    if round % 2 == 0 && next() % 4 == 0 {
+                        0
+                    } else {
+                        next() as u8
+                    }
+                })
+                .collect();
+            let _ = lzw(&src, 1 << 16);
+        }
+    }
+
+    #[test]
+    fn installed_lzw_streams_start_with_a_literal_and_decode() {
+        let Some(dir) = std::env::var_os("OPEN_SCRANTIC_DATA") else {
+            return;
+        };
+        let data = crate::assets::ScreensaverData::load(std::path::Path::new(&dir)).expect("load");
+        let mut streams = 0;
+        for name in data.archive.files.keys() {
+            let Ok(chunks) = data.archive.chunks(name) else {
+                continue;
+            }; // not a chunked resource
+            for (tag, body) in chunks {
+                if matches!(tag.as_str(), "BIN:" | "SCR:" | "TT3:" | "TTI:" | "ADS:") && body.first() == Some(&2) {
+                    let first = body[5] as u16 | (body[6] as u16 & 1) << 8;
+                    assert!(first < 256, "{name} {tag}: first code {first}");
+                    decompress(body).unwrap_or_else(|e| panic!("{name} {tag}: {e}"));
+                    streams += 1;
+                }
+            }
+        }
+        assert!(streams > 0);
+    }
+
+    #[test]
+    fn a_ttm_with_too_many_instructions_is_rejected() {
+        let ops = vec![0x0110u16; MAX_TTM_OPS + 1];
+        let archive = archive_of(&[("T.TTM", ttm_body(1, &ops))]);
+        assert!(archive.ttm("T.TTM").is_err());
+        let ok = archive_of(&[("T.TTM", ttm_body(1, &ops[..MAX_TTM_OPS]))]);
+        assert!(ok.ttm("T.TTM").is_ok());
+    }
+
+    #[test]
+    fn a_bitmap_with_too_many_pixels_is_rejected() {
+        // One 2000 x 2000 sprite; the pixel data is short and reads as zeros.
+        let mut inf = 1u16.to_le_bytes().to_vec();
+        inf.extend_from_slice(&2000u16.to_le_bytes());
+        inf.extend_from_slice(&2000u16.to_le_bytes());
+        let mut body = chunk(b"INF:", &inf);
+        body.extend(chunk(b"BIN:", &fixtures::rle(&[0; 16])));
+        let archive = archive_of(&[("B.BMP", body)]);
+        assert!(archive.bmp("B.BMP").is_err());
+    }
 }

@@ -107,6 +107,9 @@ fn main() {
                     sw.parse().unwrap_or_else(|_| fail("invalid SIZE")),
                     sh.parse().unwrap_or_else(|_| fail("invalid SIZE")),
                 );
+                if w == 0 || h == 0 {
+                    fail("SIZE must be at least 1x1");
+                }
                 let mut scaled = vec![0; w * h];
                 present::scale(&frame, &mut scaled, w, h);
                 frame = scaled;

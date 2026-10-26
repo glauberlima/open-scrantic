@@ -2,12 +2,12 @@
 /build
 
 # Original screensaver files: never commit
-SCRANTIC.SCR
-RESOURCE.MAP
-RESOURCE.001
+[Ss][Cc][Rr][Aa][Nn][Tt][Ii][Cc].[Ss][Cc][Rr]
+[Rr][Ee][Ss][Oo][Uu][Rr][Cc][Ee].[Mm][Aa][Pp]
+[Rr][Ee][Ss][Oo][Uu][Rr][Cc][Ee].001
 
 # Created next to the executable on the first run
-SCRANTIC.INI
+[Ss][Cc][Rr][Aa][Nn][Tt][Ii][Cc].[Ii][Nn][Ii]
 
 # Local tooling
 .DS_Store

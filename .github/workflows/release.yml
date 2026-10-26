@@ -41,6 +41,10 @@ jobs:
             exit 0
           fi
           TAG=$(git cliff --bumped-version)
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Unexpected version '$TAG'" >&2
+            exit 1
+          fi
           echo "Next version: $TAG (last: ${LAST:-none})"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "skipped=false" >> "$GITHUB_OUTPUT"
@@ -60,8 +64,8 @@ jobs:
           rustup toolchain install
           rustup target add x86_64-apple-darwin aarch64-apple-darwin
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-      - run: cargo build --release --target x86_64-apple-darwin
-      - run: cargo build --release --target aarch64-apple-darwin
+      - run: cargo build --locked --release --target x86_64-apple-darwin
+      - run: cargo build --locked --release --target aarch64-apple-darwin
       - name: Create universal binary
         run: |
           lipo -create \
@@ -89,7 +93,7 @@ jobs:
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-      - run: cargo build --release
+      - run: cargo build --locked --release
       - run: cp target/release/open-scrantic open-scrantic-linux-x64
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -112,10 +116,10 @@ jobs:
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-      - run: cargo build --release
+      - run: cargo build --locked --release
       - run: cp target/release/open-scrantic.exe open-scrantic-windows-x64.exe
       # The screensaver flavor: it understands only the switches Windows passes (see README).
-      - run: cargo build --release --features screensaver
+      - run: cargo build --locked --release --features screensaver
       - run: cp target/release/open-scrantic.exe open-scrantic-windows-x64.scr
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -139,6 +143,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
         with:
@@ -175,21 +180,26 @@ jobs:
 
       - name: Update version and CHANGELOG
         run: |
-          VERSION="${TAG#v}"
+          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "Unexpected tag '$TAG'" >&2; exit 1 ;; esac
+          export VERSION="${TAG#v}"
           sed -i "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml
-          perl -0pi -e "s/(name = \"open-scrantic\"\nversion = \")[^\"]*/\${1}$VERSION/" Cargo.lock
+          perl -0pi -e 's/(name = "open-scrantic"\nversion = ")[^"]*/$1$ENV{VERSION}/' Cargo.lock
           touch CHANGELOG.md
           git cliff --unreleased --tag "$TAG" --prepend CHANGELOG.md
           git diff --stat
 
       - name: Commit, tag, and push
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md Cargo.toml Cargo.lock
           git commit -m "chore(release): $TAG"
           git tag -a "$TAG" -m "$TAG"
-          git push origin HEAD:main "$TAG"
+          # The checkout keeps no credentials; hand the token to this one command only.
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=Authorization: basic $AUTH" push --atomic origin HEAD:main "$TAG"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3

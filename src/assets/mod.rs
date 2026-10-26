@@ -17,12 +17,35 @@ pub enum AssetError {
     Format(String),
 }
 
+/// Longest piece of data-file text shown in an error message, in characters.
+const MAX_SHOWN: usize = 256;
+
+/// Text that came from the data files, safe for a terminal: control characters (ESC, BEL...) are
+/// escaped and the length is capped.
+fn sanitize(s: &str) -> String {
+    let mut out: String = s
+        .chars()
+        .take(MAX_SHOWN)
+        .flat_map(|c| {
+            if c.is_control() {
+                c.escape_default().collect()
+            } else {
+                vec![c]
+            }
+        })
+        .collect();
+    if s.chars().nth(MAX_SHOWN).is_some() {
+        out.push_str("...");
+    }
+    out
+}
+
 impl fmt::Display for AssetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => write!(f, "I/O error: {e}"),
-            Self::Missing(name) => write!(f, "missing screensaver file: {name}"),
-            Self::Format(msg) => write!(f, "invalid screensaver data: {msg}"),
+            Self::Missing(name) => write!(f, "missing screensaver file: {}", sanitize(name)),
+            Self::Format(msg) => write!(f, "invalid screensaver data: {}", sanitize(msg)),
         }
     }
 }
@@ -58,12 +81,21 @@ pub struct ScreensaverData {
     pub exe: ExeData,
 }
 
+/// Largest data file read; the installed ones are a little over 1 MiB.
+const MAX_FILE_BYTES: u64 = 64 << 20;
+
 /// Reads a file from `dir`, matching the name case-insensitively (installs are often upper case).
 fn read_ci(dir: &Path, name: &str) -> Result<Vec<u8>> {
     let entries =
         fs::read_dir(dir).map_err(|e| AssetError::Missing(format!("screensaver directory {} ({e})", dir.display())))?;
     for entry in entries.flatten() {
         if entry.file_name().to_string_lossy().eq_ignore_ascii_case(name) {
+            let meta = fs::metadata(entry.path())?;
+            if !meta.is_file() || meta.len() > MAX_FILE_BYTES {
+                return Err(AssetError::Format(format!(
+                    "{name} is not a regular file of a plausible size"
+                )));
+            }
             return Ok(fs::read(entry.path())?);
         }
     }
@@ -204,5 +236,28 @@ mod tests {
         for cut in 0..map.len() {
             let _ = resource::Archive::new(&map[..cut], &volume);
         }
+    }
+
+    #[test]
+    fn error_text_from_data_files_is_escaped_and_bounded() {
+        for err in [
+            AssetError::Missing("\x1b]0;title\x07\x1b[2J".into()),
+            AssetError::Format("\x1b]52;c;AAAA\x07".into()),
+        ] {
+            let msg = err.to_string();
+            assert!(!msg.contains(['\x1b', '\x07']), "raw control byte in {msg:?}");
+        }
+        let long = AssetError::Format("x".repeat(1 << 20)).to_string();
+        assert!(long.len() < 512, "{} bytes", long.len());
+    }
+
+    #[test]
+    fn a_data_file_that_is_not_a_regular_file_is_refused() {
+        let dir = std::env::temp_dir().join(format!("open-scrantic-readci-{}", std::process::id()));
+        fs::create_dir_all(dir.join("RESOURCE.MAP")).unwrap(); // a folder where the file should be
+        fs::write(dir.join("SCRANTIC.SCR"), b"ok").unwrap();
+        assert!(read_ci(&dir, "RESOURCE.MAP").is_err());
+        assert_eq!(read_ci(&dir, "scrantic.scr").unwrap(), b"ok");
+        let _ = fs::remove_dir_all(dir);
     }
 }

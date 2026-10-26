@@ -42,6 +42,17 @@ impl Default for Config {
     }
 }
 
+/// The INI is a dozen short lines; anything bigger is not one and is replaced like any other invalid file.
+const MAX_INI_BYTES: u64 = 4096;
+
+fn read_small(path: &std::path::Path) -> Option<String> {
+    let meta = fs::metadata(path).ok()?;
+    if !meta.is_file() || meta.len() > MAX_INI_BYTES {
+        return None;
+    }
+    fs::read_to_string(path).ok()
+}
+
 impl Config {
     /// `SCRANTIC.INI` lives in the folder the original files are read from ([`crate::settings_dir`]); the
     /// location cannot be customized.
@@ -53,7 +64,7 @@ impl Config {
     /// holding the defaults (story progress included), and the run continues with those.
     pub fn load() -> Self {
         let path = Self::path();
-        let parsed = fs::read_to_string(&path).ok().and_then(|text| Self::parse(&text));
+        let parsed = read_small(&path).and_then(|text| Self::parse(&text));
         parsed.unwrap_or_else(|| {
             let cfg = Self::default();
             if let Err(e) = cfg.save() {
@@ -127,7 +138,12 @@ impl Config {
         if let Some(dir) = path.parent() {
             fs::create_dir_all(dir)?;
         }
-        fs::write(path, text)
+        // Write next to the INI and rename over it, so a crash never leaves a truncated file.
+        let tmp = path.with_extension("INI.tmp");
+        fs::write(&tmp, text)?;
+        fs::rename(&tmp, path).inspect_err(|_| {
+            let _ = fs::remove_file(&tmp);
+        })
     }
 }
 
@@ -164,5 +180,29 @@ mod tests {
     fn unknown_keys_and_other_sections_are_ignored() {
         let cfg = Config::parse(&format!("[Other]\nSounds=9\n{SECTION}\nFoo=bar\nSounds=0\n")).unwrap();
         assert!(!cfg.sounds);
+    }
+
+    #[test]
+    fn an_oversized_or_non_regular_ini_is_not_read() {
+        let dir = std::env::temp_dir().join(format!("open-scrantic-ini-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let small = dir.join("small.ini");
+        fs::write(
+            &small, "[x]
+",
+        )
+        .unwrap();
+        assert_eq!(
+            read_small(&small).as_deref(),
+            Some(
+                "[x]
+"
+            )
+        );
+        let big = dir.join("big.ini");
+        fs::write(&big, vec![b'a'; MAX_INI_BYTES as usize + 1]).unwrap();
+        assert!(read_small(&big).is_none());
+        assert!(read_small(&dir).is_none()); // a folder
+        let _ = fs::remove_dir_all(dir);
     }
 }
