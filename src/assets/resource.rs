@@ -8,7 +8,18 @@ use super::{AssetError, Result, bytes, u16_at, u32_at};
 const MAX_UNPACKED: usize = 16 << 20;
 
 pub struct Archive {
-    files: HashMap<String, Vec<u8>>,
+    /// The whole RESOURCE.001, kept once: entries may overlap, so they are ranges into it, never copies.
+    volume: Vec<u8>,
+    /// Upper-case name -> (start, len) of the entry's data in `volume`.
+    files: HashMap<String, (usize, usize)>,
+}
+
+#[cfg(test)]
+impl Archive {
+    /// Bytes of resource data this archive owns.
+    fn retained_bytes(&self) -> usize {
+        self.volume.len()
+    }
 }
 
 impl Archive {
@@ -26,18 +37,23 @@ impl Archive {
             let name_end = header[..13].iter().position(|&b| b == 0).unwrap_or(13);
             let name = String::from_utf8_lossy(&header[..name_end]).to_ascii_uppercase();
             let size = u32_at(header, 13)? as usize;
-            let data = bytes(volume, offset + 17, size)
-                .map_err(|_| AssetError::Format(format!("{name}: data out of range")))?;
-            files.insert(name, data.to_vec());
+            bytes(volume, offset + 17, size).map_err(|_| AssetError::Format(format!("{name}: data out of range")))?;
+            files.insert(name, (offset + 17, size));
         }
-        Ok(Self { files })
+        Ok(Self {
+            volume: volume.to_vec(),
+            files,
+        })
+    }
+
+    /// The data of the entry called `name` (case-insensitive).
+    fn data(&self, name: &str) -> Option<&[u8]> {
+        let &(start, len) = self.files.get(&name.to_ascii_uppercase())?;
+        self.volume.get(start..start + len)
     }
 
     fn chunks(&self, name: &str) -> Result<HashMap<String, &[u8]>> {
-        let data = self
-            .files
-            .get(&name.to_ascii_uppercase())
-            .ok_or_else(|| AssetError::Missing(name.to_string()))?;
+        let data = self.data(name).ok_or_else(|| AssetError::Missing(name.to_string()))?;
         let mut out = HashMap::new();
         let mut p = 0;
         while p + 8 <= data.len() {
@@ -358,4 +374,61 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
     }
     out.truncate(size);
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A volume of `vol` bytes with a header every 17 bytes whose size runs to the end of the volume,
+    /// so every entry overlaps the data of the ones before it, and the map that lists them all.
+    fn overlapping(vol: usize) -> (Vec<u8>, Vec<u8>) {
+        let n = vol / 17 - 1;
+        let mut volume = vec![0x41u8; vol];
+        let mut map = vec![0u8; 21 + n * 8];
+        map[19..21].copy_from_slice(&(n as u16).to_le_bytes());
+        for i in 0..n {
+            let off = i * 17;
+            let name = format!("F{i:05}.TTM");
+            volume[off..off + 13].fill(0);
+            volume[off..off + name.len()].copy_from_slice(name.as_bytes());
+            let size = (vol - off - 17) as u32;
+            volume[off + 13..off + 17].copy_from_slice(&size.to_le_bytes());
+            map[21 + i * 8 + 4..21 + i * 8 + 8].copy_from_slice(&(off as u32).to_le_bytes());
+        }
+        (map, volume)
+    }
+
+    #[test]
+    fn overlapping_entries_do_not_multiply_the_volume() {
+        let vol = 64 << 10;
+        let (map, volume) = overlapping(vol);
+        let archive = Archive::new(&map, &volume).expect("overlapping entries are structurally valid");
+        assert!(
+            archive.retained_bytes() <= vol,
+            "retained {} bytes",
+            archive.retained_bytes()
+        );
+    }
+
+    #[test]
+    fn entries_are_found_by_name() {
+        let mut volume = Vec::new();
+        for (name, body) in [("A.TTM", b"abc".as_slice()), ("B.TTM", b"")] {
+            let mut h = [0u8; 13];
+            h[..name.len()].copy_from_slice(name.as_bytes());
+            volume.extend_from_slice(&h);
+            volume.extend_from_slice(&(body.len() as u32).to_le_bytes());
+            volume.extend_from_slice(body);
+        }
+        let mut map = vec![0u8; 21];
+        map[19] = 2;
+        for off in [0u32, 17 + 3] {
+            map.extend_from_slice(&[0; 4]);
+            map.extend_from_slice(&off.to_le_bytes());
+        }
+        let archive = Archive::new(&map, &volume).unwrap();
+        assert_eq!(archive.data("a.ttm").unwrap(), b"abc");
+        assert_eq!(archive.data("B.TTM").unwrap(), b"");
+    }
 }
