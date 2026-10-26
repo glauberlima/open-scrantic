@@ -1,0 +1,61 @@
+{
+  "hunter": "hunter-assets",
+  "proposed_verdict": "needs_validation",
+  "fingerprint": "assets/resource:Archive::new:overlapping-entry-copy-amplification",
+  "title": "Overlapping RESOURCE.MAP entries make Archive::new copy the volume many times",
+  "description": "Archive::new bounds-checks each RESOURCE.MAP entry only against RESOURCE.001 and copies it with to_vec(); with up to 65535 entries and no overlap rejection or aggregate cap, retained memory can scale to about count x len(volume) at startup, including unattended .scr launches. SECURITY.md lists excessive memory use from malformed RESOURCE files as in scope.",
+  "claimed_root_cause": "No aggregate bound on bytes copied and no non-overlap check in Archive::new (resource.rs:21-31); retained memory scales with entry count x entry size rather than len(RESOURCE.001).",
+  "trace": [
+    {
+      "kind": "entrypoint",
+      "file": "src/assets/mod.rs",
+      "line": 100,
+      "scope": "ScreensaverData::load",
+      "description": "RESOURCE.MAP and RESOURCE.001 are read whole from the data directory with no size cap."
+    },
+    {
+      "kind": "propagation",
+      "file": "src/assets/mod.rs",
+      "line": 108,
+      "scope": "ScreensaverData::load",
+      "description": "Archive::new(&map, &volume) is called."
+    },
+    {
+      "kind": "propagation",
+      "file": "src/assets/resource.rs",
+      "line": 19,
+      "scope": "Archive::new",
+      "description": "count is a u16 from the map; each entry's offset comes from the map and its size from the volume header at that offset."
+    },
+    {
+      "kind": "sink",
+      "file": "src/assets/resource.rs",
+      "line": 31,
+      "scope": "Archive::new",
+      "description": "data.to_vec() allocates a fresh copy of each in-bounds range; every distinct name is kept in the HashMap."
+    }
+  ],
+  "evidence": [
+    {
+      "file": "src/assets/mod.rs",
+      "line": 41,
+      "description": "bytes() checks only start+len within the slice; it cannot see overlap with other entries."
+    },
+    {
+      "file": "src/assets/resource.rs",
+      "line": 29,
+      "description": "Each entry's data range is validated alone against the volume."
+    },
+    {
+      "file": "src/assets/resource.rs",
+      "line": 31,
+      "description": "An owned copy is inserted per distinct name, with no running total or cap such as MAX_UNPACKED."
+    }
+  ],
+  "blockers": [
+    "No bounded local fixture was built; whether a crafted volume yields enough distinct names at overlapping offsets with large decoded sizes has been argued from source but not observed, so the retained-memory growth curve is unmeasured."
+  ],
+  "validation_plan": {
+    "local": "In the run sandbox (2 GiB address-space limit), link the harness rlib and call Archive::new on a small synthetic map/volume pair whose entries point to overlapping ranges with distinct names; record retained memory (peak RSS or allocation failure) at 2-3 small entry counts and show growth with count x size rather than volume length; stop at the first allocation failure."
+  }
+}

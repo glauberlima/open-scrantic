@@ -1,0 +1,2 @@
+N=1 wav_bytes=65536 file_bytes=75808 sounds=1 retained_f32_bytes=262064 amplification=3x parse_ms=0 VmHWM:	    2612 kB
+exit=0

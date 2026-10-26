@@ -1,0 +1,25 @@
+## f02f
+exit=0
+0000000   w   a   r   n   i   n   g   :       m   i   s   s   i   n   g
+0000020       s   c   r   e   e   n   s   a   v   e   r       f   i   l
+0000040   e   :     033   ]   0   ;   T  \a 033   [   2   J  \n
+0000056
+## ads
+exit=0
+0000000   w   a   r   n   i   n   g   :       m   i   s   s   i   n   g
+0000020       s   c   r   e   e   n   s   a   v   e   r       f   i   l
+0000040   e   :     033   ]   0   ;   T  \a 033   [   2   J  \n
+0000056
+## ads_name
+exit=0
+0000000   w   a   r   n   i   n   g   :       m   i   s   s   i   n   g
+0000020       s   c   r   e   e   n   s   a   v   e   r       f   i   l
+0000040   e   :     033   c 033   [   2   J  \a  \n
+0000053
+## map
+exit=0
+0000000   e   r   r   o   r   :       i   n   v   a   l   i   d       s
+0000020   c   r   e   e   n   s   a   v   e   r       d   a   t   a   :
+0000040     033   [   2   J   A   B  \a   :       d   a   t   a       o
+0000060   u   t       o   f       r   a   n   g   e  \n
+0000074

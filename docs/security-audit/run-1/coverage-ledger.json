@@ -1,0 +1,2324 @@
+[
+  {
+    "coverage_id": ".github%2Fworkflows%2Fci.yml::.github%2Fworkflows%2Fci.yml%23permissions::.github::SUPPLY-CHAIN-AND-RELEASE.md%23Untrusted%20code%20in%20a%20privileged%20workflow",
+    "canonical_refs": {
+      "surface": ".github/workflows/ci.yml",
+      "boundary": ".github/workflows/ci.yml#permissions",
+      "subsystem": ".github",
+      "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow"
+    },
+    "surface": ".github/workflows/ci.yml",
+    "boundary": ".github/workflows/ci.yml#permissions",
+    "subsystem": ".github",
+    "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+    "starting_paths": [
+      ".github/workflows/ci.yml",
+      ".github/dependabot.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Cache, artifact, and workspace trust mixing",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Workflow command and expression confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Automation identity overreach",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-supply",
+    "reviewed_paths": [
+      ".github/ISSUE_TEMPLATE/config.yml",
+      ".github/PULL_REQUEST_TEMPLATE.md",
+      ".github/dependabot.yml",
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml"
+        ],
+        "invariant": "Fork or Dependabot PR code must not run with secrets or a write token",
+        "method": "source",
+        "result": "Only pull_request/push triggers; permissions contents: read; persist-credentials: false; no secrets referenced; actions SHA-pinned.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml",
+          ".github/workflows/release.yml"
+        ],
+        "invariant": "A lower-trust job must not populate a cache or artifact the release restores",
+        "method": "source",
+        "result": "PR caches are scoped to refs/pull/N/merge; main-scope writers are main push CI and release runs only; release downloads only same-run artifacts.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml"
+        ],
+        "invariant": "No PR-controlled text reaches shell or expressions",
+        "method": "source",
+        "result": "Only github.ref (concurrency) and matrix.os expressions; no github.event.* in run scripts.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/ISSUE_TEMPLATE/config.yml",
+          ".github/PULL_REQUEST_TEMPLATE.md",
+          ".github/dependabot.yml"
+        ],
+        "invariant": "Dependabot updates must not gain write or secret authority",
+        "method": "source",
+        "result": "Weekly updates, no auto-merge; static templates.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u14",
+    "parent_hardening": [
+      "release.yml publish: persist-credentials: false and pass the token only to the push step.",
+      "release.yml: protected environment with required reviewers and/or tag rulesets for publish.",
+      "release.yml: validate TAG against ^v[0-9]+\\.[0-9]+\\.[0-9]+$ before GITHUB_OUTPUT; pass VERSION via env to sed/perl; anchor cliff tag_pattern.",
+      "release.yml: git push --atomic origin HEAD:main \"$TAG\".",
+      "release.yml: bump the version before building so shipped --version matches the tag.",
+      "release.yml: add build provenance attestations or signing.",
+      "CI/release: cargo build/test --locked.",
+      "scripts/virustotal-scan.sh: drop curl -L on requests carrying x-apikey.",
+      "Pin runner images if reproducibility matters."
+    ]
+  },
+  {
+    "coverage_id": ".github%2Fworkflows%2Frelease.yml::.github%2Fworkflows%2Frelease.yml%23publish::.github::SUPPLY-CHAIN-AND-RELEASE.md%23Release%20authorization%20and%20signing-policy%20gaps",
+    "canonical_refs": {
+      "surface": ".github/workflows/release.yml",
+      "boundary": ".github/workflows/release.yml#publish",
+      "subsystem": ".github",
+      "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Release authorization and signing-policy gaps"
+    },
+    "surface": ".github/workflows/release.yml",
+    "boundary": ".github/workflows/release.yml#publish",
+    "subsystem": ".github",
+    "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Release authorization and signing-policy gaps",
+    "starting_paths": [
+      ".github/workflows/release.yml",
+      "scripts/virustotal-scan.sh",
+      "cliff.toml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Release authorization and signing-policy gaps",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Build-to-promotion substitution",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Workflow command and expression confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Cache, artifact, and workspace trust mixing",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Automation identity overreach",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-supply",
+    "reviewed_paths": [
+      ".github/workflows/release.yml",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "README.md",
+      "SECURITY.md",
+      "cliff.toml",
+      "scripts/virustotal-scan.sh",
+      "src/cli.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/release.yml"
+        ],
+        "invariant": "Release runs only from main by a dispatch-capable principal; downstream jobs skip when plan is skipped",
+        "method": "source",
+        "result": "workflow_dispatch needs write access; plan gated on refs/heads/main; builds/publish need plan with implicit success().",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/release.yml",
+          "cliff.toml"
+        ],
+        "invariant": "Commit/tag/branch text must not reach shell, sed/perl, GITHUB_OUTPUT or expressions",
+        "method": "source",
+        "result": "TAG is git-cliff bumped semver from writer-created tags; passed via env; sed/perl interpolation only reachable by writers (hardening).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/release.yml",
+          "scripts/virustotal-scan.sh"
+        ],
+        "invariant": "VirusTotal response fields must not reach executable contexts",
+        "method": "source",
+        "result": "Fields read with IFS read -r and printed with printf %s into Markdown only.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/release.yml"
+        ],
+        "invariant": "Persisted contents:write credential must not reach lower-trust code",
+        "method": "source",
+        "result": "Only SHA-pinned actions, pinned git-cliff, repo script read it; least privilege recorded as hardening.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          ".github/workflows/release.yml"
+        ],
+        "invariant": "Published artifacts bound to the dispatched commit and same-run build jobs",
+        "method": "source",
+        "result": "All jobs check out github.sha; distinct same-run artifact names; non-forced push.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          "CHANGELOG.md",
+          "CONTRIBUTING.md",
+          "README.md",
+          "SECURITY.md",
+          "src/cli.rs"
+        ],
+        "invariant": "Release tag/version matches identity embedded in shipped binary",
+        "method": "source",
+        "result": "Binaries built before the version bump report the previous version (v0.4.0 built from 0.3.0); no lower-trust beneficiary (hardening).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u15",
+    "parent_hardening": [
+      "release.yml publish: persist-credentials: false and pass the token only to the push step.",
+      "release.yml: protected environment with required reviewers and/or tag rulesets for publish.",
+      "release.yml: validate TAG against ^v[0-9]+\\.[0-9]+\\.[0-9]+$ before GITHUB_OUTPUT; pass VERSION via env to sed/perl; anchor cliff tag_pattern.",
+      "release.yml: git push --atomic origin HEAD:main \"$TAG\".",
+      "release.yml: bump the version before building so shipped --version matches the tag.",
+      "release.yml: add build provenance attestations or signing.",
+      "CI/release: cargo build/test --locked.",
+      "scripts/virustotal-scan.sh: drop curl -L on requests carrying x-apikey.",
+      "Pin runner images if reproducibility matters."
+    ]
+  },
+  {
+    "coverage_id": "Cargo.lock::Cargo.toml%23dependencies::Cargo::SUPPLY-CHAIN-AND-RELEASE.md%23Dependency%20source%20and%20namespace%20confusion",
+    "canonical_refs": {
+      "surface": "Cargo.lock",
+      "boundary": "Cargo.toml#dependencies",
+      "subsystem": "Cargo",
+      "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Dependency source and namespace confusion"
+    },
+    "surface": "Cargo.lock",
+    "boundary": "Cargo.toml#dependencies",
+    "subsystem": "Cargo",
+    "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Dependency source and namespace confusion",
+    "starting_paths": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "build.rs",
+      "rust-toolchain.toml"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency source and namespace confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "blocked",
+    "agent_id": "hunter-supply",
+    "reviewed_paths": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "build.rs",
+      "rust-toolchain.toml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          "Cargo.lock",
+          "Cargo.toml"
+        ],
+        "invariant": "All deps from crates.io with locked checksums; no git/path/patch/alt registry",
+        "method": "source",
+        "result": "241 crates.io packages with checksums; no git/path sources, patch, .cargo/config or submodules.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-supply",
+        "reviewed_paths": [
+          "build.rs",
+          "rust-toolchain.toml"
+        ],
+        "invariant": "Build script and toolchain inputs are not mutable or lower-trust",
+        "method": "source",
+        "result": "build.rs only embeds in-repo resources on Windows; toolchain pinned 1.99.1; no --locked (hardening).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [
+      "RustSec advisory check of 241 locked versions not performed (no network/advisory-db/cargo-audit); owner should run cargo audit or cargo deny check advisories."
+    ],
+    "key": "u16",
+    "parent_hardening": [
+      "release.yml publish: persist-credentials: false and pass the token only to the push step.",
+      "release.yml: protected environment with required reviewers and/or tag rulesets for publish.",
+      "release.yml: validate TAG against ^v[0-9]+\\.[0-9]+\\.[0-9]+$ before GITHUB_OUTPUT; pass VERSION via env to sed/perl; anchor cliff tag_pattern.",
+      "release.yml: git push --atomic origin HEAD:main \"$TAG\".",
+      "release.yml: bump the version before building so shipped --version matches the tag.",
+      "release.yml: add build provenance attestations or signing.",
+      "CI/release: cargo build/test --locked.",
+      "scripts/virustotal-scan.sh: drop curl -L on requests carrying x-apikey.",
+      "Pin runner images if reproducibility matters."
+    ]
+  },
+  {
+    "coverage_id": "examples%2Fsnapshot.rs%23main::examples%2Fsnapshot.rs%23args::examples::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "examples/snapshot.rs#main",
+      "boundary": "examples/snapshot.rs#args",
+      "subsystem": "examples",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "examples/snapshot.rs#main",
+    "boundary": "examples/snapshot.rs#args",
+    "subsystem": "examples",
+    "attack_class": "ATTACK-CLASSES.md#Injection",
+    "starting_paths": [
+      "examples/snapshot.rs",
+      "src/present.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-engine",
+        "reviewed_paths": [
+          "examples/snapshot.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-engine",
+            "reviewed_paths": [
+              "examples/snapshot.rs"
+            ],
+            "invariant": "Snapshot CLI/env parsing and present.rs must handle edge inputs",
+            "method": "source",
+            "result": "Not reviewed: run ended before this unit was started.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Unit not reviewed: reassign"
+        ],
+        "reassignment_reason": "Wave-1 hunter run ended before this unit was reviewed (critic-1 reassign)."
+      }
+    ],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter2-engine",
+    "reviewed_paths": [
+      "examples/snapshot.rs",
+      "src/present.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter2-engine",
+        "reviewed_paths": [
+          "examples/snapshot.rs"
+        ],
+        "invariant": "Args/env cannot inject paths or commands",
+        "method": "source",
+        "result": "Only OUT_DIR and a numeric step name form the output path; no process spawned; SIZE=0xN panics in png() and huge SIZE allocates (developer tool, not shipped, self-inflicted).",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter2-engine",
+        "reviewed_paths": [
+          "src/present.rs"
+        ],
+        "invariant": "scale/dedither/plain/png do not index out of range for sizes the shipped binary passes",
+        "method": "source",
+        "result": "Zero-size handled early, windows via NonZeroU32, frame always 640x480.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u19",
+    "parent_hardening": [
+      "Use OpenOptions::create_new for screenshots and refuse a symlinked SCRANTIC.INI if the app may run from a directory writable by others; write the INI via temp file + atomic rename.",
+      "Cap the SCRANTIC.INI read (e.g. 64 KiB) and require a regular file.",
+      "examples/snapshot.rs: reject SIZE with zero or absurdly large dimensions."
+    ]
+  },
+  {
+    "coverage_id": "repository::repository%23all::repository::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "repository",
+      "boundary": "repository#all",
+      "subsystem": "repository",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "repository",
+    "boundary": "repository#all",
+    "subsystem": "repository",
+    "attack_class": "ATTACK-CLASSES.md#Obvious things",
+    "starting_paths": [
+      "src",
+      ".github",
+      "scripts",
+      "examples",
+      "Cargo.toml",
+      ".gitignore",
+      "SECURITY.md"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-wildcard",
+    "reviewed_paths": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml",
+      ".gitignore",
+      "Cargo.lock",
+      "Cargo.toml",
+      "SECURITY.md",
+      "docs/images/holidays.png",
+      "docs/images/open-scrantic-logo.png",
+      "docs/media/open-scrantic-demo.mp4",
+      "examples/snapshot.rs",
+      "resources/windows.manifest",
+      "scripts/virustotal-scan.sh",
+      "src",
+      "src/assets/mod.rs",
+      "src/cli.rs",
+      "src/engine/mod.rs",
+      "src/lib.rs",
+      "src/main.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml",
+          ".github/workflows/release.yml",
+          "examples/snapshot.rs",
+          "resources/windows.manifest",
+          "scripts/virustotal-scan.sh",
+          "src"
+        ],
+        "invariant": "No hardcoded secrets/keys/tokens",
+        "method": "source",
+        "result": "Only prose, a public manifest token, and secrets.VIRUSTOTAL_API_KEY passed via env and sent only as a header.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "docs/images/holidays.png",
+          "docs/images/open-scrantic-logo.png",
+          "docs/media/open-scrantic-demo.mp4",
+          "src"
+        ],
+        "invariant": "Git history has no removed secrets, removed security checks, or committed data files",
+        "method": "source",
+        "result": "No deletions ever; data files never committed; removed checks were refactor moves; large blobs are docs media.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "examples/snapshot.rs",
+          "src"
+        ],
+        "invariant": "No security TODO/FIXME/HACK",
+        "method": "source",
+        "result": "None present.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "examples/snapshot.rs",
+          "src/assets/mod.rs",
+          "src/engine/mod.rs",
+          "src/lib.rs"
+        ],
+        "invariant": "Debug modes gated and non-sensitive",
+        "method": "source",
+        "result": "OPEN_SCRANTIC_DEBUG prints only plan diagnostics; test/example env vars only.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          ".gitignore",
+          "Cargo.lock",
+          "Cargo.toml"
+        ],
+        "invariant": ".gitignore coverage, pinning, no dynamic exec",
+        "method": "source",
+        "result": "Covered; lockfile committed; no process spawning or dynamic loading in Rust sources.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "SECURITY.md",
+          "src/assets/mod.rs",
+          "src/cli.rs",
+          "src/main.rs"
+        ],
+        "invariant": "Errors do not leak to another principal",
+        "method": "source",
+        "result": "Local stderr only.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u17",
+    "parent_hardening": [
+      ".gitignore data-file patterns are case-sensitive while the loader matches case-insensitively; add case-insensitive globs.",
+      "Tests in src/assets/mod.rs use predictable temp_dir()/open-scrantic-*-<pid> paths with create_dir_all; use exclusively created temp dirs.",
+      "read_ci follows symlinks and reads FIFOs/devices/huge files whole; require a regular file and a size cap.",
+      "F12 screenshots and INI saves follow symlinks via fs::write; optional create_new for screenshots.",
+      "std::env::args() aborts on non-UTF-8 arguments (self-impact); args_os is more robust."
+    ]
+  },
+  {
+    "coverage_id": "repository::repository%23all::repository::ATTACK-CLASSES.md%23Wildcard",
+    "canonical_refs": {
+      "surface": "repository",
+      "boundary": "repository#all",
+      "subsystem": "repository",
+      "attack_class": "ATTACK-CLASSES.md#Wildcard"
+    },
+    "surface": "repository",
+    "boundary": "repository#all",
+    "subsystem": "repository",
+    "attack_class": "ATTACK-CLASSES.md#Wildcard",
+    "starting_paths": [
+      "src",
+      "examples",
+      "docs",
+      ".github",
+      "build.rs",
+      "resources"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Wildcard",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-wildcard",
+    "reviewed_paths": [
+      "src/assets/exe.rs",
+      "src/assets/mod.rs",
+      "src/assets/resource.rs",
+      "src/cli.rs",
+      "src/engine/ads.rs",
+      "src/engine/mod.rs",
+      "src/engine/rng.rs",
+      "src/engine/ttm.rs",
+      "src/lib.rs",
+      "src/main.rs",
+      "src/present.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "src/assets/exe.rs",
+          "src/assets/mod.rs",
+          "src/assets/resource.rs",
+          "src/engine/ads.rs",
+          "src/engine/mod.rs",
+          "src/engine/ttm.rs"
+        ],
+        "invariant": "Untrusted data-file strings neutralized before reaching the terminal",
+        "method": "local",
+        "result": "Unchanged ttm.rs/resource.rs printed raw ESC]0;..BEL ESC]52;c;..BEL ESC[2J to stderr; 1 MiB name -> one 1,048,612-byte line.",
+        "artifact": "agents/hunter-wildcard/artifacts/evidence-stderr-injection.txt"
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "src/engine/mod.rs",
+          "src/engine/rng.rs"
+        ],
+        "invariant": "RNG warm-up/pick/plan arithmetic cannot hang or panic from clock input",
+        "method": "source",
+        "result": "Bounded (<=65535 warm-up), below(0)=0, loops terminate.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "src/main.rs"
+        ],
+        "invariant": "App::advance catch-up cannot underflow or spin",
+        "method": "source",
+        "result": "Monotonic Instant; stall branch bounded to <=21 steps.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "src/assets/mod.rs",
+          "src/lib.rs"
+        ],
+        "invariant": "Case-insensitive matching cannot escape the install dir",
+        "method": "source",
+        "result": "Constant names vs read_dir of fixed folders; no traversal.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "src/assets/resource.rs",
+          "src/engine/ads.rs",
+          "src/engine/ttm.rs"
+        ],
+        "invariant": "Ttm::parse padding and AdsRuntime::load splitting in bounds and terminating",
+        "method": "source",
+        "result": "Holds.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-wildcard",
+        "reviewed_paths": [
+          "src/cli.rs",
+          "src/main.rs",
+          "src/present.rs"
+        ],
+        "invariant": "Presentation, CLI and file writes cross no principal boundary",
+        "method": "source",
+        "result": "Fixed-size frames, fixed flags; writes only in dirs whose writers could replace the binary.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "stderr-unsanitized-data-file-strings"
+    ],
+    "unresolved": [],
+    "key": "u18",
+    "parent_hardening": [
+      ".gitignore data-file patterns are case-sensitive while the loader matches case-insensitively; add case-insensitive globs.",
+      "Tests in src/assets/mod.rs use predictable temp_dir()/open-scrantic-*-<pid> paths with create_dir_all; use exclusively created temp dirs.",
+      "read_ci follows symlinks and reads FIFOs/devices/huge files whole; require a regular file and a size cap.",
+      "F12 screenshots and INI saves follow symlinks via fs::write; optional create_new for screenshots.",
+      "std::env::args() aborts on non-UTF-8 arguments (self-impact); args_os is more robust."
+    ],
+    "decision_note": "candidate stderr-unsanitized-data-file-strings decided in findings.json"
+  },
+  {
+    "coverage_id": "src%2Fassets%2Fexe.rs%23ExeData%3A%3Aparse::src%2Fassets%2Fexe.rs%23NeFile%3A%3Asegment::src%2Fassets::MEMORY-SAFETY-AND-BINARY.md%23Malformed%20binary%20metadata%20and%20relocation%20handling",
+    "canonical_refs": {
+      "surface": "src/assets/exe.rs#ExeData::parse",
+      "boundary": "src/assets/exe.rs#NeFile::segment",
+      "subsystem": "src/assets",
+      "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Malformed binary metadata and relocation handling"
+    },
+    "surface": "src/assets/exe.rs#ExeData::parse",
+    "boundary": "src/assets/exe.rs#NeFile::segment",
+    "subsystem": "src/assets",
+    "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Malformed binary metadata and relocation handling",
+    "starting_paths": [
+      "src/assets/exe.rs",
+      "src/assets/mod.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Malformed binary metadata and relocation handling",
+      "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-exe",
+    "reviewed_paths": [
+      "src/assets/exe.rs",
+      "src/assets/mod.rs",
+      "src/engine/rng.rs",
+      "src/engine/walk.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/assets/exe.rs",
+          "src/assets/mod.rs"
+        ],
+        "invariant": "NE header/segment table/shift-scaled offsets range-checked before slicing",
+        "method": "source",
+        "result": "parse checks MZ/len and get(ne..ne+2); segment rejects index 0/>count/shift>15; offset u16<<shift <= 2^31; all reads via bytes()/u16_at/get.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/assets/exe.rs"
+        ],
+        "invariant": "Data-segment table walks terminate and stay bounded",
+        "method": "source",
+        "result": "Each loop advances 17/6/2 bytes and errors at segment end (<= 64 KiB); bounded linear work.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/engine/rng.rs",
+          "src/engine/walk.rs"
+        ],
+        "invariant": "Consumers of ExeData do not index with unvalidated values (guarantee side only)",
+        "method": "source",
+        "result": "Rng::new mods j/k by 56; walk uses .get; exe.paths[id] only after paths.get(id) check.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/assets/exe.rs",
+          "src/assets/mod.rs"
+        ],
+        "invariant": "Malformed NE metadata yields Ok/Err rather than panic",
+        "method": "local",
+        "result": "Synthetic NE truncations + 200,000 random header mutations through unchanged exe.rs (release-equivalent): ok=181517 err=20543, no panic/abort/hang.",
+        "artifact": "agents/hunter-exe/artifacts/mutate-evidence.txt"
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u04",
+    "parent_hardening": [
+      "decode_wav: on 32-bit targets with overflow checks off, chunk size 0xFFFFFFF8 wraps p (infinite loop) or panics the data slice; use checked_add/saturation (no 32-bit target released).",
+      "resample runs synchronously on the event-loop thread with no length cap (~1.4 s/MiB); cap per-sound samples or precompute off-thread.",
+      "read_ci/fs::read of SCRANTIC.SCR has no size cap; a file-size ceiling (e.g. 4 MiB) bounds every later stage."
+    ]
+  },
+  {
+    "coverage_id": "src%2Fassets%2Fexe.rs%23NeFile%3A%3Awave_resources::src%2Fassets%2Fexe.rs%23decode_wav::src%2Fassets%2Bsrc%2Faudio.rs::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Decompression%20and%20representation%20amplification",
+    "canonical_refs": {
+      "surface": "src/assets/exe.rs#NeFile::wave_resources",
+      "boundary": "src/assets/exe.rs#decode_wav",
+      "subsystem": "src/assets+src/audio.rs",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification"
+    },
+    "surface": "src/assets/exe.rs#NeFile::wave_resources",
+    "boundary": "src/assets/exe.rs#decode_wav",
+    "subsystem": "src/assets+src/audio.rs",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+    "starting_paths": [
+      "src/assets/exe.rs",
+      "src/audio.rs",
+      "src/main.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-exe",
+    "reviewed_paths": [
+      "src/assets/exe.rs",
+      "src/assets/mod.rs",
+      "src/audio.rs",
+      "src/engine/mod.rs",
+      "src/engine/ttm.rs",
+      "src/main.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/assets/exe.rs",
+          "src/assets/mod.rs"
+        ],
+        "invariant": "Decoded sound memory bounded relative to SCRANTIC.SCR size; aliasing name entries must not re-decode",
+        "method": "local",
+        "result": "Violated: one 64 KiB WAVE + N aliasing WAVESFX names: N=1024 -> 93,120 B file, 268 MB retained (2882x), VmHWM 264.6 MB.",
+        "artifact": "agents/hunter-exe/artifacts/alias-evidence.txt"
+      },
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/audio.rs",
+          "src/engine/mod.rs",
+          "src/engine/ttm.rs",
+          "src/main.rs"
+        ],
+        "invariant": "Soft-audio resampling bounded per sound",
+        "method": "local",
+        "result": "resample copied verbatim: linear, 17.41 output bytes per WAV byte at 48 kHz, ~1.4 s CPU/MiB on main thread, cached per id (compounds aliasing).",
+        "artifact": "agents/hunter-exe/artifacts/resample-evidence.txt"
+      },
+      {
+        "agent_id": "hunter-exe",
+        "reviewed_paths": [
+          "src/assets/exe.rs"
+        ],
+        "invariant": "decode_wav and name-table walk terminate without overflow on 64-bit",
+        "method": "source",
+        "result": "Holds on released 64-bit targets.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "src/assets/exe.rs:NeFile::wave_resources:aliased-wave-decode-unbounded"
+    ],
+    "unresolved": [],
+    "key": "u05",
+    "parent_hardening": [
+      "decode_wav: on 32-bit targets with overflow checks off, chunk size 0xFFFFFFF8 wraps p (infinite loop) or panics the data slice; use checked_add/saturation (no 32-bit target released).",
+      "resample runs synchronously on the event-loop thread with no length cap (~1.4 s/MiB); cap per-sound samples or precompute off-thread.",
+      "read_ci/fs::read of SCRANTIC.SCR has no size cap; a file-size ceiling (e.g. 4 MiB) bounds every later stage."
+    ],
+    "decision_note": "candidate src/assets/exe.rs:NeFile::wave_resources:aliased-wave-decode-unbounded decided in findings.json"
+  },
+  {
+    "coverage_id": "src%2Fassets%2Fresource.rs%23Archive%3A%3Abmp%2Fscr%2Fpalette%2Fttm%2Fads::src%2Fassets%2Fresource.rs%23unpack_4bpp::src%2Fassets::MEMORY-SAFETY-AND-BINARY.md%23Out-of-bounds%20read%20or%20write",
+    "canonical_refs": {
+      "surface": "src/assets/resource.rs#Archive::bmp/scr/palette/ttm/ads",
+      "boundary": "src/assets/resource.rs#unpack_4bpp",
+      "subsystem": "src/assets",
+      "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write"
+    },
+    "surface": "src/assets/resource.rs#Archive::bmp/scr/palette/ttm/ads",
+    "boundary": "src/assets/resource.rs#unpack_4bpp",
+    "subsystem": "src/assets",
+    "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+    "starting_paths": [
+      "src/assets/resource.rs",
+      "src/engine/gfx.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-assets",
+    "reviewed_paths": [
+      "src/assets/mod.rs",
+      "src/assets/resource.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-assets",
+        "reviewed_paths": [
+          "src/assets/mod.rs",
+          "src/assets/resource.rs"
+        ],
+        "invariant": "No reachable OOB index/slice/overflow in chunks/bmp/scr/palette/ttm/ads/unpack_4bpp; image allocations bounded.",
+        "method": "source",
+        "result": "Holds: header reads via bytes()/u16_at/u32_at (checked_add + get); chunk bodies bounded; palette uses get().unwrap_or(0); ads checks res.get(p+2..); unpack_4bpp caps first_nibble+count at 32M nibbles (saturating_add), so per-BMP pixels <= 32 MiB; scr w*h capped the same way.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u03",
+    "parent_hardening": [
+      "Add an aggregate cap on total archive bytes in Archive::new (e.g. sum of sizes <= len(volume)), or store (offset, len) ranges into one shared volume buffer instead of to_vec() per entry.",
+      "Ttm::parse expands each 2-byte opcode into an Op of about 40 bytes plus a Vec per 0x0FF0 opcode, so a 16 MiB decompressed TT3 can reach several hundred MiB before frames.truncate(pages); consider capping ops/frames or truncating to pages while parsing.",
+      "lzw writes dictionary entry 256 from a stale previous-epoch old after a reset; skipping the insert for the first code after a reset would match standard LZW semantics.",
+      "read_ci uses fs::read with no size limit on RESOURCE.001/MAP; a file-size ceiling would bound startup memory."
+    ]
+  },
+  {
+    "coverage_id": "src%2Fassets%2Fresource.rs%23Archive%3A%3Anew::src%2Fassets%2Fmod.rs%23bytes::src%2Fassets::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Decompression%20and%20representation%20amplification",
+    "canonical_refs": {
+      "surface": "src/assets/resource.rs#Archive::new",
+      "boundary": "src/assets/mod.rs#bytes",
+      "subsystem": "src/assets",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification"
+    },
+    "surface": "src/assets/resource.rs#Archive::new",
+    "boundary": "src/assets/mod.rs#bytes",
+    "subsystem": "src/assets",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+    "starting_paths": [
+      "src/assets/resource.rs",
+      "src/assets/mod.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-assets",
+    "reviewed_paths": [
+      "src/assets/mod.rs",
+      "src/assets/resource.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-assets",
+        "reviewed_paths": [
+          "src/assets/resource.rs",
+          "src/assets/mod.rs"
+        ],
+        "invariant": "Total memory retained by Archive::new is bounded by len(RESOURCE.001) regardless of how many RESOURCE.MAP entries alias it.",
+        "method": "source",
+        "result": "Not enforced: bytes() checks each entry only against the volume; data.to_vec() per entry (resource.rs:31); no overlap rejection or aggregate cap; count <= 65535. Same-name entries overwrite (old copy freed), so amplification needs distinct names at overlapping offsets — not prevented by source; no fixture built.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "assets/resource:Archive::new:overlapping-entry-copy-amplification"
+    ],
+    "unresolved": [],
+    "key": "u01",
+    "parent_hardening": [
+      "Add an aggregate cap on total archive bytes in Archive::new (e.g. sum of sizes <= len(volume)), or store (offset, len) ranges into one shared volume buffer instead of to_vec() per entry.",
+      "Ttm::parse expands each 2-byte opcode into an Op of about 40 bytes plus a Vec per 0x0FF0 opcode, so a 16 MiB decompressed TT3 can reach several hundred MiB before frames.truncate(pages); consider capping ops/frames or truncating to pages while parsing.",
+      "lzw writes dictionary entry 256 from a stale previous-epoch old after a reset; skipping the insert for the first code after a reset would match standard LZW semantics.",
+      "read_ci uses fs::read with no size limit on RESOURCE.001/MAP; a file-size ceiling would bound startup memory."
+    ],
+    "decision_note": "candidate assets/resource:Archive::new:overlapping-entry-copy-amplification decided in findings.json"
+  },
+  {
+    "coverage_id": "src%2Fassets%2Fresource.rs%23decompress::src%2Fassets%2Fresource.rs%23MAX_UNPACKED::src%2Fassets::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Superlinear%20parsing%2C%20matching%2C%20or%20evaluation",
+    "canonical_refs": {
+      "surface": "src/assets/resource.rs#decompress",
+      "boundary": "src/assets/resource.rs#MAX_UNPACKED",
+      "subsystem": "src/assets",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation"
+    },
+    "surface": "src/assets/resource.rs#decompress",
+    "boundary": "src/assets/resource.rs#MAX_UNPACKED",
+    "subsystem": "src/assets",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+    "starting_paths": [
+      "src/assets/resource.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "covered",
+        "agent_id": "hunter-assets",
+        "reviewed_paths": [
+          "src/assets/resource.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-assets",
+            "reviewed_paths": [
+              "src/assets/resource.rs"
+            ],
+            "invariant": "decompress terminates, cost linear in declared output (<= 16 MiB), no panic/OOB.",
+            "method": "source",
+            "result": "Claimed holds: size checked before allocation; rle advances p each iteration; lzw new > free breaks, prefix[free] = old with old <= free-1 within an epoch so chains are acyclic (depth <= 4096); entry 256 after reset never traversed; first code > 255 walks zero-initialised slots; indexes < 4096.",
+            "artifact": null
+          },
+          {
+            "agent_id": "hunter-assets",
+            "reviewed_paths": [
+              "src/assets/resource.rs"
+            ],
+            "invariant": "Ttm::parse terminates and does not panic on arbitrary TT3 bytes.",
+            "method": "source",
+            "result": "Holds: p advances >= 2 per iteration; nargs > 6 or truncated args error; string slice bounded; frames never empty at last_mut().unwrap().",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [],
+        "reassignment_reason": "coverage_critic_disputed_covered_state: critic-1 questioned an invariant the wave-1 check relied on in the LZW decoder first-code handling; not re-run in this pass"
+      }
+    ],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "coverage_critic_disputed_covered_state: critic-1 questioned an invariant the wave-1 check relied on in the LZW decoder first-code handling; not re-run in this pass"
+    ],
+    "key": "u02",
+    "parent_hardening": [
+      "Add an aggregate cap on total archive bytes in Archive::new (e.g. sum of sizes <= len(volume)), or store (offset, len) ranges into one shared volume buffer instead of to_vec() per entry.",
+      "Ttm::parse expands each 2-byte opcode into an Op of about 40 bytes plus a Vec per 0x0FF0 opcode, so a 16 MiB decompressed TT3 can reach several hundred MiB before frames.truncate(pages); consider capping ops/frames or truncating to pages while parsing.",
+      "lzw writes dictionary entry 256 from a stale previous-epoch old after a reset; skipping the insert for the first code after a reset would match standard LZW semantics.",
+      "read_ci uses fs::read with no size limit on RESOURCE.001/MAP; a file-size ceiling would bound startup memory."
+    ]
+  },
+  {
+    "coverage_id": "src%2Fengine%2Fads.rs%23AdsRuntime%3A%3Aload%2Fupdate::src%2Fengine%2Fads.rs%23AdsRuntime%3A%3Aw::src%2Fengine::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Reachable%20fatal%20error%20or%20deadlock",
+    "canonical_refs": {
+      "surface": "src/engine/ads.rs#AdsRuntime::load/update",
+      "boundary": "src/engine/ads.rs#AdsRuntime::w",
+      "subsystem": "src/engine",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock"
+    },
+    "surface": "src/engine/ads.rs#AdsRuntime::load/update",
+    "boundary": "src/engine/ads.rs#AdsRuntime::w",
+    "subsystem": "src/engine",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+    "starting_paths": [
+      "src/engine/ads.rs",
+      "src/engine/ttm.rs",
+      "src/engine/rng.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-vm",
+        "reviewed_paths": [
+          "src/engine/ads.rs",
+          "src/engine/rng.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-vm",
+            "reviewed_paths": [
+              "src/engine/ads.rs",
+              "src/engine/rng.rs"
+            ],
+            "invariant": "ADS VM reads go through AdsRuntime::w (bounds-checked; returns 0xFFFF past end) and Rng::below guards n == 0",
+            "method": "source",
+            "result": "Source-only: AdsRuntime::w uses script.get(); Rng::below returns 0 for n == 0. Recursion depth and loop bounds in run_block/exec/skip_block/eval_cond/random not settled; nothing executed.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Run stopped before ADS recursion depth and loop termination were settled; reassign"
+        ],
+        "reassignment_reason": "hunter_run_stopped_early_not_reassigned: ADS VM recursion depth and termination not settled"
+      }
+    ],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "hunter_run_stopped_early_not_reassigned: ADS VM recursion depth and termination not settled"
+    ],
+    "key": "u08",
+    "parent_hardening": []
+  },
+  {
+    "coverage_id": "src%2Fengine%2Fads.rs%23AdsRuntime%3A%3Aload::src%2Fassets%2Fresource.rs%23Archive%3A%3Attm%2Fbmp%20re-decode%20per%20RES%20entry%20and%20per%200xF02F%2F0xF01F%20execution::src%2Fengine::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Decompression%20and%20representation%20amplification",
+    "canonical_refs": {
+      "surface": "src/engine/ads.rs#AdsRuntime::load",
+      "boundary": "src/assets/resource.rs#Archive::ttm/bmp re-decode per RES entry and per 0xF02F/0xF01F execution",
+      "subsystem": "src/engine",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification"
+    },
+    "surface": "src/engine/ads.rs#AdsRuntime::load",
+    "boundary": "src/assets/resource.rs#Archive::ttm/bmp re-decode per RES entry and per 0xF02F/0xF01F execution",
+    "subsystem": "src/engine",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+    "starting_paths": [
+      "src/engine/ads.rs",
+      "src/engine/ttm.rs",
+      "src/engine/mod.rs",
+      "src/assets/resource.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "critic_proposed_missing_unit_not_assigned: aggregate decoded memory when ADS RES lists and TTM bitmap/screen loads repeat; not reviewed in this pass"
+    ],
+    "key": "u20"
+  },
+  {
+    "coverage_id": "src%2Fengine%2Fconfig.rs%23Config%3A%3Aload::src%2Fengine%2Fconfig.rs%23Config%3A%3Aparse::src%2Fengine::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "src/engine/config.rs#Config::load",
+      "boundary": "src/engine/config.rs#Config::parse",
+      "subsystem": "src/engine",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "src/engine/config.rs#Config::load",
+    "boundary": "src/engine/config.rs#Config::parse",
+    "subsystem": "src/engine",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "src/engine/config.rs",
+      "src/lib.rs",
+      "src/main.rs",
+      "src/saver.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Local file ownership and TOCTOU",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Universal moves",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-engine",
+        "reviewed_paths": [
+          "src/engine/config.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-engine",
+            "reviewed_paths": [
+              "src/engine/config.rs"
+            ],
+            "invariant": "SCRANTIC.INI parsing and saving must be robust and stay in the settings directory",
+            "method": "source",
+            "result": "Not reviewed: run ended before this unit was started.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Unit not reviewed: reassign"
+        ],
+        "reassignment_reason": "Wave-1 hunter run ended before this unit was reviewed (critic-1 reassign)."
+      }
+    ],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter2-engine",
+    "reviewed_paths": [
+      "src/engine/config.rs",
+      "src/engine/island.rs",
+      "src/engine/mod.rs",
+      "src/lib.rs",
+      "src/main.rs",
+      "src/saver.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter2-engine",
+        "reviewed_paths": [
+          "src/engine/config.rs",
+          "src/engine/island.rs",
+          "src/engine/mod.rs"
+        ],
+        "invariant": "Every INI value accepted by Config::parse stays in a range that cannot panic or mis-index downstream",
+        "method": "source",
+        "result": "Strict ranges (flags 0/1, NumDays 0..=11, Introduction 0..=12, Year<=9999, Month<=12, Day<=31, StartTime<=2359 with minutes<60); bad value or non key=value line returns None; half_hour_slot inputs non-negative; island.init clamps max_day; year/month/day only compared with the clock.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter2-engine",
+        "reviewed_paths": [
+          "src/engine/config.rs",
+          "src/lib.rs",
+          "src/main.rs",
+          "src/saver.rs"
+        ],
+        "invariant": "INI path is fixed and odd file types cause no cross-principal effect",
+        "method": "source",
+        "result": "Path is settings_dir()/SCRANTIC.INI, constant name; non-UTF-8/directory/unreadable falls back to defaults; unbounded read_to_string and symlink-following fs::write matter only for a writer of the install dir, who can already replace data files and the executable.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u10",
+    "parent_hardening": [
+      "Use OpenOptions::create_new for screenshots and refuse a symlinked SCRANTIC.INI if the app may run from a directory writable by others; write the INI via temp file + atomic rename.",
+      "Cap the SCRANTIC.INI read (e.g. 64 KiB) and require a regular file.",
+      "examples/snapshot.rs: reject SIZE with zero or absurdly large dimensions."
+    ]
+  },
+  {
+    "coverage_id": "src%2Fengine%2Fmod.rs%23Engine%3A%3Anew%2Fstep::src%2Fassets%2Fexe.rs%23SceneDef::src%2Fengine::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Reachable%20fatal%20error%20or%20deadlock",
+    "canonical_refs": {
+      "surface": "src/engine/mod.rs#Engine::new/step",
+      "boundary": "src/assets/exe.rs#SceneDef",
+      "subsystem": "src/engine",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock"
+    },
+    "surface": "src/engine/mod.rs#Engine::new/step",
+    "boundary": "src/assets/exe.rs#SceneDef",
+    "subsystem": "src/engine",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+    "starting_paths": [
+      "src/engine/mod.rs",
+      "src/engine/walk.rs",
+      "src/engine/island.rs",
+      "src/engine/rng.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-engine",
+        "reviewed_paths": [
+          "src/engine/mod.rs",
+          "src/engine/rng.rs",
+          "src/engine/walk.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-engine",
+            "reviewed_paths": [
+              "src/engine/mod.rs",
+              "src/engine/rng.rs",
+              "src/engine/walk.rs"
+            ],
+            "invariant": "Engine planning and walking must not abort or stop making progress when SCRANTIC.SCR tables are empty, short or hold out-of-range values",
+            "method": "source",
+            "result": "Partial source read only; session cut off. Rng::below guards n == 0; final pick loop capped by MAX_FINAL_PICKS; middle loop capped by MAX_PLAN_LEN. Open: empty/FINAL-less catalog in plan_session, 'total as u16' in pick, route-list indexing in Walk::advance.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Review interrupted: plan_session/pick/Walk::advance edge cases need a fresh owner"
+        ],
+        "reassignment_reason": "hunter_run_stopped_early_not_reassigned: planning on empty/malformed scene catalog and route lists not settled"
+      }
+    ],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "hunter_run_stopped_early_not_reassigned: planning on empty/malformed scene catalog and route lists not settled"
+    ],
+    "key": "u09",
+    "parent_hardening": []
+  },
+  {
+    "coverage_id": "src%2Fengine%2Fttm.rs%23run_frame::src%2Fengine%2Fgfx.rs%23Canvas::src%2Fengine::MEMORY-SAFETY-AND-BINARY.md%23Out-of-bounds%20read%20or%20write",
+    "canonical_refs": {
+      "surface": "src/engine/ttm.rs#run_frame",
+      "boundary": "src/engine/gfx.rs#Canvas",
+      "subsystem": "src/engine",
+      "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write"
+    },
+    "surface": "src/engine/ttm.rs#run_frame",
+    "boundary": "src/engine/gfx.rs#Canvas",
+    "subsystem": "src/engine",
+    "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+    "starting_paths": [
+      "src/engine/ttm.rs",
+      "src/engine/gfx.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Out-of-bounds read or write",
+      "MEMORY-SAFETY-AND-BINARY.md#Integer overflow, underflow, truncation, and signedness",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Reachable fatal error or deadlock",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-vm",
+        "reviewed_paths": [
+          "src/assets/resource.rs",
+          "src/engine/gfx.rs",
+          "src/engine/ttm.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-vm",
+            "reviewed_paths": [
+              "src/assets/resource.rs",
+              "src/engine/gfx.rs",
+              "src/engine/ttm.rs"
+            ],
+            "invariant": "Canvas indexing stays inside the 640x480 buffer and sprite buffer for any i16 argument plus island offset",
+            "method": "source",
+            "result": "Source-only: put clips via bounded(); copy/save/restore index rows of a visible() clip; sprite source index bounded by w*h <= 32M nibbles (fits i32); load_picture clamps width 640 / height 480; bmp slot clamped 0..5. No OOB path found; nothing executed.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Run stopped before a local check; reassign"
+        ],
+        "reassignment_reason": "hunter_run_stopped_early_not_reassigned: integer behavior in drawing/sprite indexing not settled by a local check"
+      }
+    ],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "hunter_run_stopped_early_not_reassigned: integer behavior in drawing/sprite indexing not settled by a local check"
+    ],
+    "key": "u07",
+    "parent_hardening": []
+  },
+  {
+    "coverage_id": "src%2Fengine%2Fttm.rs%23run_frame::src%2Fengine%2Fgfx.rs%23Clip%3A%3Abounded::src%2Fengine::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Superlinear%20parsing%2C%20matching%2C%20or%20evaluation",
+    "canonical_refs": {
+      "surface": "src/engine/ttm.rs#run_frame",
+      "boundary": "src/engine/gfx.rs#Clip::bounded",
+      "subsystem": "src/engine",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation"
+    },
+    "surface": "src/engine/ttm.rs#run_frame",
+    "boundary": "src/engine/gfx.rs#Clip::bounded",
+    "subsystem": "src/engine",
+    "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+    "starting_paths": [
+      "src/engine/ttm.rs",
+      "src/engine/gfx.rs",
+      "src/engine/ads.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-vm",
+        "reviewed_paths": [
+          "src/engine/ads.rs",
+          "src/engine/gfx.rs",
+          "src/engine/ttm.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-vm",
+            "reviewed_paths": [
+              "src/engine/ads.rs",
+              "src/engine/gfx.rs",
+              "src/engine/ttm.rs"
+            ],
+            "invariant": "Per-opcode and per-frame CPU/memory cost of TTM drawing is bounded relative to the visible canvas and script size",
+            "method": "source",
+            "result": "Read drawing primitives and run_frame; cost question left unresolved when the run stopped. Nothing executed.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Run stopped before the cost analysis was completed; reassign"
+        ],
+        "reassignment_reason": "hunter_run_stopped_early_not_reassigned: TTM opcode CPU cost and drawing-primitive cost not settled"
+      }
+    ],
+    "wave": 2,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "hunter_run_stopped_early_not_reassigned: TTM opcode CPU cost and drawing-primitive cost not settled"
+    ],
+    "key": "u06",
+    "parent_hardening": []
+  },
+  {
+    "coverage_id": "src%2Flib.rs%23data_dirs::src%2Fassets%2Fmod.rs%23locate::src::MEMORY-SAFETY-AND-BINARY.md%23Library%2C%20plugin%2C%20and%20executable%20search-order%20trust",
+    "canonical_refs": {
+      "surface": "src/lib.rs#data_dirs",
+      "boundary": "src/assets/mod.rs#locate",
+      "subsystem": "src",
+      "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Library, plugin, and executable search-order trust"
+    },
+    "surface": "src/lib.rs#data_dirs",
+    "boundary": "src/assets/mod.rs#locate",
+    "subsystem": "src",
+    "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Library, plugin, and executable search-order trust",
+    "starting_paths": [
+      "src/lib.rs",
+      "src/assets/mod.rs",
+      "src/saver.rs",
+      "README.md"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Library, plugin, and executable search-order trust",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Install, update, and repair path trust",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Universal moves",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-windows",
+    "reviewed_paths": [
+      "Cargo.toml",
+      "README.md",
+      "build.rs",
+      "resources/windows.manifest",
+      "src/assets/mod.rs",
+      "src/engine/config.rs",
+      "src/lib.rs",
+      "src/saver.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/assets/mod.rs",
+          "src/engine/config.rs",
+          "src/lib.rs"
+        ],
+        "invariant": "Data/INI search path for System32 .scr has only account- or admin-writable dirs",
+        "method": "source",
+        "result": "[System32, own %APPDATA%\\OpenScrantic]; no CWD/PATH fallback; no boundary crossed.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/lib.rs",
+          "src/saver.rs"
+        ],
+        "invariant": "Dir creation/error paths write only to the account's own locations",
+        "method": "source",
+        "result": "create_dir_all only on own APPDATA; INI written only in located install dir.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "Cargo.toml",
+          "README.md",
+          "build.rs",
+          "resources/windows.manifest"
+        ],
+        "invariant": "Shipped Windows binary does not resolve DLLs from the data supplier's directory",
+        "method": "source",
+        "result": "README places .exe beside third-party data files; no /DEPENDENTLOADFLAG or SetDefaultDllDirectories; import table not observable here.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "dll-search-order:windows-exe-app-dir-shared-with-data-files"
+    ],
+    "unresolved": [],
+    "key": "u13",
+    "parent_hardening": [
+      "preview_attributes: check IsWindow(parent) before GetClientRect/with_parent_window (SAFETY comment claims a live window but nothing checks it).",
+      "already_running: document the Local mutex is not a security control; handle NULL+ERROR_ACCESS_DENIED consistently.",
+      "Declare requestedExecutionLevel asInvoker/uiAccess=false explicitly; embed a manifest in the non-screensaver .exe too.",
+      "window_handle: inline form accepts signs while the separate-argument form requires digits (harmless inconsistency)."
+    ],
+    "decision_note": "candidate dll-search-order:windows-exe-app-dir-shared-with-data-files decided in findings.json"
+  },
+  {
+    "coverage_id": "src%2Flib.rs%23settings_dir%2Bsrc%2Fmain.rs%23save_screenshot::src%2Flib.rs%23data_dirs::src::DESKTOP-MOBILE-AND-LOCAL-IPC.md%23Local%20file%20ownership%20and%20TOCTOU",
+    "canonical_refs": {
+      "surface": "src/lib.rs#settings_dir+src/main.rs#save_screenshot",
+      "boundary": "src/lib.rs#data_dirs",
+      "subsystem": "src",
+      "attack_class": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Local file ownership and TOCTOU"
+    },
+    "surface": "src/lib.rs#settings_dir+src/main.rs#save_screenshot",
+    "boundary": "src/lib.rs#data_dirs",
+    "subsystem": "src",
+    "attack_class": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Local file ownership and TOCTOU",
+    "starting_paths": [
+      "src/lib.rs",
+      "src/main.rs",
+      "src/saver.rs",
+      "src/assets/mod.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Local file ownership and TOCTOU",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Install, update, and repair path trust",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Universal moves",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Validation rules",
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Library, plugin, and executable search-order trust",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [
+      {
+        "wave": 1,
+        "status": "blocked",
+        "agent_id": "hunter-engine",
+        "reviewed_paths": [
+          "src/lib.rs"
+        ],
+        "local_checks": [
+          {
+            "agent_id": "hunter-engine",
+            "reviewed_paths": [
+              "src/lib.rs"
+            ],
+            "invariant": "Local reads and writes must not cross a principal boundary",
+            "method": "source",
+            "result": "Not reviewed: run ended before this unit was started.",
+            "artifact": null
+          }
+        ],
+        "result_fingerprints": [],
+        "unresolved": [
+          "Unit not reviewed: reassign"
+        ],
+        "reassignment_reason": "Wave-1 hunter run ended before this unit was reviewed (critic-1 reassign)."
+      }
+    ],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter2-engine",
+    "reviewed_paths": [
+      "src/assets/mod.rs",
+      "src/lib.rs",
+      "src/main.rs",
+      "src/saver.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter2-engine",
+        "reviewed_paths": [
+          "src/assets/mod.rs",
+          "src/lib.rs"
+        ],
+        "invariant": "Data and settings read only from fixed directories, no CWD or value-controlled search path",
+        "method": "source",
+        "result": "app_dir from current_exe parent; user dir from APPDATA of the same user; fixed list; no CWD-relative search.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter2-engine",
+        "reviewed_paths": [
+          "src/main.rs",
+          "src/saver.rs"
+        ],
+        "invariant": "Files written by the process cannot be redirected by a lower-trust principal",
+        "method": "source",
+        "result": "Screenshot (F12 only) and INI writes use fs::write following symlinks with a predictable name; exploitable only in an install directory writable by another user, which already allows replacing the executable; standard per-user and admin installs are not.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u11",
+    "parent_hardening": [
+      "Use OpenOptions::create_new for screenshots and refuse a symlinked SCRANTIC.INI if the app may run from a directory writable by others; write the INI via temp file + atomic rename.",
+      "Cap the SCRANTIC.INI read (e.g. 64 KiB) and require a regular file.",
+      "examples/snapshot.rs: reject SIZE with zero or absurdly large dimensions."
+    ]
+  },
+  {
+    "coverage_id": "src%2Fsaver.rs%23parse::src%2Fwindows_ui.rs%23unsafe::src%2Fwindows_ui.rs::MEMORY-SAFETY-AND-BINARY.md%23Pointer-length%20and%20ownership%20contract%20mismatch",
+    "canonical_refs": {
+      "surface": "src/saver.rs#parse",
+      "boundary": "src/windows_ui.rs#unsafe",
+      "subsystem": "src/windows_ui.rs",
+      "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Pointer-length and ownership contract mismatch"
+    },
+    "surface": "src/saver.rs#parse",
+    "boundary": "src/windows_ui.rs#unsafe",
+    "subsystem": "src/windows_ui.rs",
+    "attack_class": "MEMORY-SAFETY-AND-BINARY.md#Pointer-length and ownership contract mismatch",
+    "starting_paths": [
+      "src/saver.rs",
+      "src/windows_ui.rs",
+      "src/main.rs",
+      "resources/windows.manifest",
+      "resources/windows.rc",
+      "build.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+      "MEMORY-SAFETY-AND-BINARY.md#Pointer-length and ownership contract mismatch",
+      "MEMORY-SAFETY-AND-BINARY.md#Unwind, exception, and thread-affinity violations",
+      "MEMORY-SAFETY-AND-BINARY.md#Universal moves",
+      "MEMORY-SAFETY-AND-BINARY.md#Validation rules",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Exported service, activity, receiver, or provider overreach",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Pending-action and user-presence confusion",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Universal moves",
+      "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+        "reason": "No HTTP, session or identity surface in source (no network code at all)."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Core discipline",
+        "reason": "No browser, webview or DOM surface."
+      },
+      {
+        "block": "AI-AND-LLM.md#Core discipline",
+        "reason": "No model or agent integration."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+        "reason": "No cloud, container or IaC in repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+        "reason": "No RPC, broker or wire protocol."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+        "reason": "Single-user local program; no multi-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-windows",
+    "reviewed_paths": [
+      "build.rs",
+      "resources/windows.manifest",
+      "resources/windows.rc",
+      "src/main.rs",
+      "src/saver.rs",
+      "src/windows_ui.rs"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/saver.rs"
+        ],
+        "invariant": "Only the launching process drives switches/HWNDs",
+        "method": "source",
+        "result": "args only; caller already same user/integrity (no uiAccess/elevation); shell activation passes /S.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/windows_ui.rs"
+        ],
+        "invariant": "Unsafe Win32 calls: pointer lifetimes, struct sizes, GDI ownership",
+        "method": "source",
+        "result": "wide buffers outlive calls; cbSize correct; font deleted after loop; stock font never deleted; GetMessageW -1 ends loop.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/main.rs",
+          "src/windows_ui.rs"
+        ],
+        "invariant": "Caller-supplied HWNDs cannot grant extra authority",
+        "method": "source",
+        "result": "/c owner IsWindow-checked; /p handle unchecked but failure is clean exit; same-principal only.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/windows_ui.rs"
+        ],
+        "invariant": "No unwind/thread-affinity violation across wnd_proc",
+        "method": "source",
+        "result": "No panicking ops; panic=abort; main-thread only.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/saver.rs",
+          "src/windows_ui.rs"
+        ],
+        "invariant": "Named mutex squatting cannot defeat a security property",
+        "method": "source",
+        "result": "Squatter only suppresses animation; locking is Winlogon's.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "src/main.rs",
+          "src/saver.rs"
+        ],
+        "invariant": "InputGuard does not bypass screensaver-as-lock",
+        "method": "source",
+        "result": "Guard only decides exit; lock independent; preview never saves INI.",
+        "artifact": null
+      },
+      {
+        "agent_id": "hunter-windows",
+        "reviewed_paths": [
+          "build.rs",
+          "resources/windows.manifest",
+          "resources/windows.rc"
+        ],
+        "invariant": "Packaging grants no elevation",
+        "method": "source",
+        "result": "No requestedExecutionLevel/uiAccess; asInvoker.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "key": "u12",
+    "parent_hardening": [
+      "preview_attributes: check IsWindow(parent) before GetClientRect/with_parent_window (SAFETY comment claims a live window but nothing checks it).",
+      "already_running: document the Local mutex is not a security control; handle NULL+ERROR_ACCESS_DENIED consistently.",
+      "Declare requestedExecutionLevel asInvoker/uiAccess=false explicitly; embed a manifest in the non-screensaver .exe too.",
+      "window_handle: inline form accepts signs while the separate-argument form requires digits (harmless inconsistency)."
+    ]
+  }
+]

@@ -1,0 +1,7 @@
+vol=65536 B n=64 map=533 B  rss_before=2176 KiB rss_after=6292 KiB retained~4116 KiB (64.3x vol) peak_hwm=6296 KiB t=2.152778ms
+vol=65536 B n=256 map=2069 B  rss_before=2176 KiB rss_after=18096 KiB retained~15920 KiB (248.8x vol) peak_hwm=18100 KiB t=7.998254ms
+vol=262144 B n=128 map=1045 B  rss_before=2368 KiB rss_after=35200 KiB retained~32832 KiB (128.2x vol) peak_hwm=35200 KiB t=109.513724ms
+vol=262144 B n=512 map=4117 B  rss_before=2372 KiB rss_after=132356 KiB retained~129984 KiB (507.8x vol) peak_hwm=132356 KiB t=531.755607ms
+vol=1048576 B n=128 map=1045 B  rss_before=3116 KiB rss_after=134252 KiB retained~131136 KiB (128.1x vol) peak_hwm=134252 KiB t=160.247307ms
+vol=1048576 B n=256 map=2069 B  rss_before=3140 KiB rss_after=265304 KiB retained~262164 KiB (256.0x vol) peak_hwm=265304 KiB t=775.420494ms
+vol=1048576 B n=512 map=4117 B  rss_before=3136 KiB rss_after=526336 KiB retained~523200 KiB (510.9x vol) peak_hwm=526336 KiB t=1.69492995s

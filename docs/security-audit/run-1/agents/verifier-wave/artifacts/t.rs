@@ -1,0 +1,86 @@
+// Bounded check: one WAVE resource referenced by N RT_NAMETABLE entries (WAVESFX1..N).
+// Builds a minimal NE that passes ExeData::parse's build checks, parses it with the
+// unchanged harness copy of src/assets/exe.rs, and reports file size vs retained decoded samples.
+use scrantic_harness::assets::exe::ExeData;
+use std::time::Instant;
+
+fn put16(v: &mut Vec<u8>, o: usize, x: u16) { v[o..o + 2].copy_from_slice(&x.to_le_bytes()); }
+fn align(v: &mut Vec<u8>) -> usize { while v.len() % 16 != 0 { v.push(0); } v.len() }
+
+fn build(n: usize, wav_len: usize) -> Vec<u8> {
+    let mut f = vec![0u8; 0x200];
+    f[0] = b'M'; f[1] = b'Z';
+    put16(&mut f, 0x3C, 0x40);
+    f[0x40] = b'N'; f[0x41] = b'E';
+    put16(&mut f, 0x40 + 0x1C, 14);          // segment count
+    put16(&mut f, 0x40 + 0x22, 0x40);        // segment table at NE+0x40
+    put16(&mut f, 0x40 + 0x24, 0x40 + 14 * 8); // resource table
+    put16(&mut f, 0x40 + 0x32, 4);           // segment shift
+    let seg = |i: usize| 0x80 + (i - 1) * 8;
+    let rt = 0x40 + 0x40 + 14 * 8;
+    // DS (segment 14)
+    let ds_off = align(&mut f);
+    let mut ds = vec![0u8; 0x2000];
+    ds[0x1681..0x168D].copy_from_slice(b"ACTIVITY.ADS");
+    ds[0x1D56..0x1D5F].copy_from_slice(b"WAVESFX%d");
+    f.extend_from_slice(&ds);
+    put16(&mut f, seg(14), (ds_off >> 4) as u16); put16(&mut f, seg(14) + 2, 0x2000);
+    // walk code (segment 4)
+    let wc_off = align(&mut f);
+    let mut wc = vec![0u8; 0x600];
+    for i in 0..34 { let o = 0x4FB + i * 2; wc[o..o + 2].copy_from_slice(&0x580u16.to_le_bytes()); }
+    wc[0x580] = 0xB8; wc[0x581..0x583].copy_from_slice(&0x1E00u16.to_le_bytes());
+    f.extend_from_slice(&wc);
+    put16(&mut f, seg(4), (wc_off >> 4) as u16); put16(&mut f, seg(4) + 2, 0x600);
+    // one WAVE resource
+    let wav_off = align(&mut f);
+    let mut wav = Vec::new();
+    wav.extend_from_slice(b"RIFF"); wav.extend_from_slice(&0u32.to_le_bytes()); wav.extend_from_slice(b"WAVE");
+    wav.extend_from_slice(b"data"); wav.extend_from_slice(&((wav_len - 20) as u32).to_le_bytes());
+    wav.resize(wav_len, 0x80);
+    f.extend_from_slice(&wav);
+    // name table: N entries all -> (0x8011, 0x8002)
+    let nt_off = align(&mut f);
+    let mut nt = Vec::new();
+    for k in 1..=n {
+        let name = format!("\0WAVESFX{k}");
+        let len = 6 + name.len();
+        nt.extend_from_slice(&(len as u16).to_le_bytes());
+        nt.extend_from_slice(&0x8011u16.to_le_bytes());
+        nt.extend_from_slice(&0x8002u16.to_le_bytes());
+        nt.extend_from_slice(name.as_bytes());
+    }
+    nt.extend_from_slice(&[0u8; 8]);
+    f.extend_from_slice(&nt);
+    align(&mut f);
+    // resource table (shift 4)
+    let mut r = Vec::new();
+    r.extend_from_slice(&4u16.to_le_bytes());
+    for (t, id, off, len) in [(0x800Fu16, 0x8001u16, nt_off, nt.len()), (0x8011, 0x8002, wav_off, wav_len)] {
+        r.extend_from_slice(&t.to_le_bytes()); r.extend_from_slice(&1u16.to_le_bytes()); r.extend_from_slice(&[0; 4]);
+        r.extend_from_slice(&((off >> 4) as u16).to_le_bytes());
+        r.extend_from_slice(&((len.div_ceil(16)) as u16).to_le_bytes());
+        r.extend_from_slice(&[0; 2]); r.extend_from_slice(&id.to_le_bytes()); r.extend_from_slice(&[0; 4]);
+    }
+    r.extend_from_slice(&[0; 2]);
+    f[rt..rt + r.len()].copy_from_slice(&r);
+    f
+}
+
+fn vm_hwm_kib() -> String {
+    std::fs::read_to_string("/proc/self/status").unwrap_or_default().lines()
+        .find(|l| l.starts_with("VmHWM")).unwrap_or("VmHWM: ?").to_string()
+}
+
+fn main() {
+    let a: Vec<String> = std::env::args().collect();
+    let n: usize = a[1].parse().unwrap();
+    let wav_len: usize = a[2].parse().unwrap();
+    let exe = build(n, wav_len);
+    let t = Instant::now();
+    let d = ExeData::parse(&exe).expect("parse");
+    let floats: usize = d.sounds.values().map(|v| v.len()).sum();
+    println!("N={n} wav_bytes={wav_len} file_bytes={} sounds={} retained_f32_bytes={} amplification={:.0}x parse_ms={} {}",
+        exe.len(), d.sounds.len(), floats * 4, (floats * 4) as f64 / exe.len() as f64, t.elapsed().as_millis(), vm_hwm_kib());
+}
+

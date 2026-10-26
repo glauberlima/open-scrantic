@@ -1,0 +1,14 @@
+# Harness: /tmp/claude-0/-home-user-open-scrantic/fbbdca3d-d67e-504e-bff1-344795dee824/scratchpad/security-audit/run-1/agents/hunter-wildcard/scratch/t.rs (scratch-relative t.rs), built with rustc --edition 2024 -C opt-level=3 -C overflow-checks=off -C panic=abort against libscrantic_harness.rlib (target src unchanged), run inside sandbox-run.sh (no net, ro mounts, 30 s wall)
+# Run 1: TTM X.TTM frame 0 = [0xF01F, text=ESC]0;PWNED-TITLE BEL ESC]52;c;aWQK BEL ESC[2J]; run_frame -> archive.scr(name) fails -> eprintln
+# exit codes:
+exit=0
+exit=0
+# od -c of captured stderr (run 1):
+0000000   w   a   r   n   i   n   g   :       m   i   s   s   i   n   g
+0000020       s   c   r   e   e   n   s   a   v   e   r       f   i   l
+0000040   e   :     033   ]   0   ;   P   W   N   E   D   -   T   I   T
+0000060   L   E  \a 033   ]   5   2   ;   c   ;   a   W   Q   K  \a 033
+0000100   [   2   J  \n
+0000104
+# Run 2 (arg big): 1 MiB name -> stderr byte count:
+1048612

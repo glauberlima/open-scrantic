@@ -1,0 +1,46 @@
+=== source: resample.rs ===
+// `resample` and its constants copied VERBATIM from src/audio.rs:15-53 (audio.rs depends on rodio and is not in the harness).
+use std::f32::consts::PI;
+use std::time::Instant;
+const SOURCE_RATE: u32 = 11025;
+const SOFT_CUTOFF: f32 = 0.6;
+const LOBES: f32 = 8.0;
+fn sinc(x: f32) -> f32 {
+    if x.abs() < 1e-6 { 1.0 } else { (PI * x).sin() / (PI * x) }
+}
+fn resample(src: &[f32], rate: u32, cutoff: f32) -> Vec<f32> {
+    let step = SOURCE_RATE as f32 / rate as f32;
+    let reach = LOBES / cutoff;
+    let len = (src.len() as u64 * rate as u64).div_ceil(SOURCE_RATE as u64) as usize;
+    (0..len)
+        .map(|i| {
+            let t = i as f32 * step;
+            let first = (t - reach).ceil() as i64;
+            let last = (t + reach).floor() as i64;
+            (first.max(0)..=last.min(src.len() as i64 - 1))
+                .map(|j| {
+                    let x = (t - j as f32) * cutoff;
+                    src[j as usize] * cutoff * sinc(x) * sinc(x / LOBES)
+                })
+                .sum()
+        })
+        .collect()
+}
+fn main() {
+    for &n in &[65516usize, 4 * 65516, 16 * 65516] {
+        let src = vec![0.0f32; n]; // decode_wav output of an n-byte data chunk of 0x80
+        let t = Instant::now();
+        let out = resample(&src, 48000, SOFT_CUTOFF);
+        println!("src_samples={n} (wav bytes) rate=48000 out_f32_bytes={} bytes_per_wav_byte={:.2} ms={}",
+            out.len() * 4, (out.len() * 4) as f64 / n as f64, t.elapsed().as_millis());
+    }
+    let empty = resample(&[], 48000, SOFT_CUTOFF);
+    println!("empty_src_out_len={}", empty.len());
+}
+
+=== output: resample-out.txt (sandbox-run.sh, AS 2 GiB, CPU 60 s, no net; rustc -C opt-level=3 -C overflow-checks=off -C panic=abort) ===
+src_samples=65516 (wav bytes) rate=48000 out_f32_bytes=1140960 bytes_per_wav_byte=17.41 ms=92
+src_samples=262064 (wav bytes) rate=48000 out_f32_bytes=4563836 bytes_per_wav_byte=17.41 ms=355
+src_samples=1048256 (wav bytes) rate=48000 out_f32_bytes=18255344 bytes_per_wav_byte=17.41 ms=1399
+empty_src_out_len=0
+exit=0

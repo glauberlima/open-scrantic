@@ -1,0 +1,50 @@
+{
+  "run_id": "open-scrantic-run-1",
+  "repo": "glauberlima/open-scrantic",
+  "target": "/home/user/open-scrantic",
+  "source_ref": {
+    "commit": "60e8e5ebc5fb7b1e02d30e930f8903bc16ffb884",
+    "dirty": false
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "."
+  ],
+  "budget": 30,
+  "execution_policy": "sandboxed-source-and-local-only",
+  "selected_companions": [
+    "MEMORY-SAFETY-AND-BINARY.md",
+    "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md",
+    "SUPPLY-CHAIN-AND-RELEASE.md",
+    "DESKTOP-MOBILE-AND-LOCAL-IPC.md"
+  ],
+  "prior_runs": [],
+  "prior_run_note": "No prior coverage-ledger.json or findings.json exists for this repository.",
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent"
+  },
+  "sandbox": "bin/sandbox-run.sh: unshare net+mount+pid namespaces, all writable mounts remounted read-only except the agent scratch dir, env -i allowlist (PATH, HOME, TMPDIR = scratch), prlimit AS 2 GiB / CPU 60 s / fsize 64 MiB / nproc 64 / nofile 256, timeout -s KILL wall clock",
+  "harness": "build/libscrantic_harness.rlib: rustc 1.97.0 rlib of src/assets/*.rs and src/engine/{ads,gfx,rng,ttm}.rs included read-only by #[path], built inside the sandbox with opt-level=3, overflow-checks=off, debug-assertions=off (matches [profile.release])",
+  "deviations": [
+    "Crate dependencies (winit, rodio, softbuffer, chrono, windows-sys) are not cached locally and fetching is prohibited, so the full crate is not built; std-only modules are exercised through the harness. Phase 1 reconnaissance was performed by the parent directly (the target is ~5.5k lines) instead of four research agents."
+  ],
+  "run_status": "incomplete",
+  "incomplete_reason": "coverage_units_deferred: TTM/ADS interpreter cost and recursion, engine planning on malformed catalogs, LZW first-code handling (disputed by critic), and aggregate decoded memory on ADS/TTM loads were not settled; dependency advisory check not possible offline",
+  "agents_used": 16,
+  "agents_budget": 30,
+  "agent_breakdown": {
+    "reconnaissance": 0,
+    "hunters_wave1": 7,
+    "post_wave_critic": 1,
+    "hunter_wave2": 1,
+    "candidate_verifiers": 4,
+    "final_record_verifiers": 3
+  },
+  "final_clean_critic": "not run"
+}
