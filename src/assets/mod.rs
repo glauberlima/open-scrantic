@@ -17,12 +17,35 @@ pub enum AssetError {
     Format(String),
 }
 
+/// Longest piece of data-file text shown in an error message, in characters.
+const MAX_SHOWN: usize = 256;
+
+/// Text that came from the data files, safe for a terminal: control characters (ESC, BEL...) are
+/// escaped and the length is capped.
+fn sanitize(s: &str) -> String {
+    let mut out: String = s
+        .chars()
+        .take(MAX_SHOWN)
+        .flat_map(|c| {
+            if c.is_control() {
+                c.escape_default().collect()
+            } else {
+                vec![c]
+            }
+        })
+        .collect();
+    if s.chars().nth(MAX_SHOWN).is_some() {
+        out.push_str("...");
+    }
+    out
+}
+
 impl fmt::Display for AssetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => write!(f, "I/O error: {e}"),
-            Self::Missing(name) => write!(f, "missing screensaver file: {name}"),
-            Self::Format(msg) => write!(f, "invalid screensaver data: {msg}"),
+            Self::Missing(name) => write!(f, "missing screensaver file: {}", sanitize(name)),
+            Self::Format(msg) => write!(f, "invalid screensaver data: {}", sanitize(msg)),
         }
     }
 }
@@ -204,5 +227,18 @@ mod tests {
         for cut in 0..map.len() {
             let _ = resource::Archive::new(&map[..cut], &volume);
         }
+    }
+
+    #[test]
+    fn error_text_from_data_files_is_escaped_and_bounded() {
+        for err in [
+            AssetError::Missing("]0;title[2J".into()),
+            AssetError::Format("]52;c;AAAA".into()),
+        ] {
+            let msg = err.to_string();
+            assert!(!msg.contains(['', '']), "raw control byte in {msg:?}");
+        }
+        let long = AssetError::Format("x".repeat(1 << 20)).to_string();
+        assert!(long.len() < 512, "{} bytes", long.len());
     }
 }
