@@ -323,6 +323,12 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
     let mut suffix = vec![0u8; 4096];
     let (mut nbits, mut free, mut bitpos) = (9u32, 257usize, 0u32);
     let Some(first) = get(nbits) else { return out };
+    if first > 255 {
+        // The first code must be a literal. A dictionary code here leaves slot `first` pointing at itself
+        // once the dictionary grows to it, and decoding that code would never end; every installed stream
+        // starts with a literal.
+        return out;
+    }
     let (mut old, mut last) = (first as usize, first as u8);
     out.push(last);
     let mut stack = Vec::with_capacity(4096);
@@ -355,6 +361,9 @@ fn lzw(src: &[u8], size: usize) -> Vec<u8> {
             code = old;
         }
         while code > 255 {
+            if stack.len() > 4096 {
+                return out; // a chain longer than the dictionary is a cycle: corrupt stream
+            }
             stack.push(suffix[code]);
             code = prefix[code] as usize;
         }
@@ -430,5 +439,86 @@ mod tests {
         let archive = Archive::new(&map, &volume).unwrap();
         assert_eq!(archive.data("a.ttm").unwrap(), b"abc");
         assert_eq!(archive.data("B.TTM").unwrap(), b"");
+    }
+
+    /// LSB-first packer for the 9-bit codes of a fresh LZW stream (method byte 2 + size header).
+    fn lzw_chunk(codes: &[u16], size: u32) -> Vec<u8> {
+        let (mut out, mut buf, mut cnt) = (vec![2u8], 0u32, 0u32);
+        out.extend_from_slice(&size.to_le_bytes());
+        for &c in codes {
+            buf |= (c as u32) << cnt;
+            cnt += 9;
+            while cnt >= 8 {
+                out.push(buf as u8);
+                buf >>= 8;
+                cnt -= 8;
+            }
+        }
+        if cnt > 0 {
+            out.push(buf as u8);
+        }
+        out
+    }
+
+    #[test]
+    fn lzw_dictionary_cycle_from_a_non_literal_first_code_is_an_error() {
+        // The first code is taken as a literal. 300 is not one: its slot is written later with prefix 257 while
+        // slot 257 was written with prefix 300, so decoding code 300 walks 300 -> 257 -> 300 forever.
+        let mut codes = vec![300u16];
+        codes.extend([65u16; 42]); // slots 257..=298
+        codes.extend([257, 65, 300]);
+        let chunk = lzw_chunk(&codes, 1 << 16);
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(decompress(&chunk).is_err());
+        });
+        let result = rx.recv_timeout(std::time::Duration::from_secs(1));
+        assert_eq!(result, Ok(true), "decompress must fail promptly");
+    }
+
+    #[test]
+    fn lzw_random_streams_terminate() {
+        let mut x = 0x2545_F491_4F6C_DD1Du64;
+        let mut next = move || {
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            x
+        };
+        for round in 0..3000 {
+            let src: Vec<u8> = (0..next() % 600)
+                .map(|_| {
+                    if round % 2 == 0 && next() % 4 == 0 {
+                        0
+                    } else {
+                        next() as u8
+                    }
+                })
+                .collect();
+            let _ = lzw(&src, 1 << 16);
+        }
+    }
+
+    #[test]
+    fn installed_lzw_streams_start_with_a_literal_and_decode() {
+        let Some(dir) = std::env::var_os("OPEN_SCRANTIC_DATA") else {
+            return;
+        };
+        let data = crate::assets::ScreensaverData::load(std::path::Path::new(&dir)).expect("load");
+        let mut streams = 0;
+        for name in data.archive.files.keys() {
+            let Ok(chunks) = data.archive.chunks(name) else {
+                continue;
+            }; // not a chunked resource
+            for (tag, body) in chunks {
+                if matches!(tag.as_str(), "BIN:" | "SCR:" | "TT3:" | "TTI:" | "ADS:") && body.first() == Some(&2) {
+                    let first = body[5] as u16 | (body[6] as u16 & 1) << 8;
+                    assert!(first < 256, "{name} {tag}: first code {first}");
+                    decompress(body).unwrap_or_else(|e| panic!("{name} {tag}: {e}"));
+                    streams += 1;
+                }
+            }
+        }
+        assert!(streams > 0);
     }
 }
