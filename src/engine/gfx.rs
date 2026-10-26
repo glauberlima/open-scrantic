@@ -179,8 +179,10 @@ impl Canvas {
         if w <= 0 || h <= 0 {
             return;
         }
-        for yy in y..y + h {
-            for xx in x..x + w {
+        // Only the part inside the clip is visited: the arguments are 16-bit, so the whole rectangle can be
+        // a billion pixels of which `put` would reject nearly all.
+        for yy in y.max(clip.y1)..(y + h).min(clip.y2 + 1) {
+            for xx in x.max(clip.x1)..(x + w).min(clip.x2 + 1) {
                 let border = xx == x || yy == y || xx == x + w - 1 || yy == y + h - 1;
                 if border {
                     self.put(xx, yy, if filled && w > 1 && h > 1 && fg == bg { bg } else { fg }, clip);
@@ -202,8 +204,8 @@ impl Canvas {
             let (fx, fy) = (px as f32 + 0.5 - cx as f32, py as f32 + 0.5 - cy as f32);
             fx * fx + fy * fy <= rf * rf
         };
-        for py in cy - r..cy + r {
-            for px in cx - r..cx + r {
+        for py in (cy - r).max(clip.y1)..(cy + r).min(clip.y2 + 1) {
+            for px in (cx - r).max(clip.x1)..(cx + r).min(clip.x2 + 1) {
                 if !inside(px, py) {
                     continue;
                 }
@@ -239,5 +241,99 @@ mod tests {
         dst.copy_rect_from(&src, -2, -2, 5, 5);
         assert_eq!(dst.px.iter().filter(|&&p| p == 7).count(), 9);
         assert_eq!(dst.px[0], 7);
+    }
+
+    /// Runs `f` on a thread and reports whether it returned within a second.
+    fn finishes_promptly(f: impl FnOnce() + Send + 'static) -> bool {
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            f();
+            let _ = tx.send(());
+        });
+        rx.recv_timeout(std::time::Duration::from_secs(1)).is_ok()
+    }
+
+    #[test]
+    fn huge_rect_costs_only_the_visible_part() {
+        assert!(finishes_promptly(|| {
+            let mut c = Canvas::default();
+            c.rect(-30000, -30000, 32767, 32767, 1, 2, true, Clip::FULL);
+            c.rect(-100, -100, 32767, 32767, 1, 2, true, Clip::FULL);
+        }));
+    }
+
+    #[test]
+    fn huge_ellipse_costs_only_the_visible_part() {
+        assert!(finishes_promptly(|| {
+            let mut c = Canvas::default();
+            c.ellipse(320, 240, 32767, 1, 2, Clip::FULL);
+            c.ellipse(-20000, 5, 32767, 1, 2, Clip::FULL);
+        }));
+    }
+
+    /// The unclipped loops this module used before the visible region was computed up front.
+    #[allow(clippy::too_many_arguments)] // mirrors Canvas::rect
+    fn reference_rect(c: &mut Canvas, x: i32, y: i32, w: i32, h: i32, fg: u8, bg: u8, filled: bool, clip: Clip) {
+        let clip = clip.bounded();
+        for yy in y..y + h {
+            for xx in x..x + w {
+                let border = xx == x || yy == y || xx == x + w - 1 || yy == y + h - 1;
+                if border {
+                    c.put(xx, yy, if filled && w > 1 && h > 1 && fg == bg { bg } else { fg }, clip);
+                } else if filled {
+                    c.put(xx, yy, bg, clip);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rect_matches_the_unclipped_loops() {
+        let clips = [Clip::FULL, Clip::rect(100, 50, 200, 120)];
+        for clip in clips {
+            for (x, y, w, h) in [
+                (-5, -5, 20, 20),
+                (90, 40, 30, 30),
+                (600, 450, 100, 100),
+                (-50, 10, 900, 5),
+                (7, 7, 1, 1),
+            ] {
+                for filled in [false, true] {
+                    let (mut a, mut b) = (Canvas::default(), Canvas::default());
+                    a.rect(x, y, w, h, 3, 4, filled, clip);
+                    reference_rect(&mut b, x, y, w, h, 3, 4, filled, clip);
+                    assert!(a.px == b.px, "rect {x},{y} {w}x{h} filled={filled}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ellipse_matches_the_unclipped_loops() {
+        for (cx, cy, r) in [
+            (320, 240, 50),
+            (5, 5, 30),
+            (630, 470, 40),
+            (-10, 240, 25),
+            (100, 100, 1),
+        ] {
+            let (mut a, mut b) = (Canvas::default(), Canvas::default());
+            a.ellipse(cx, cy, r, 3, 4, Clip::FULL);
+            let rf = r as f32;
+            let inside = |px: i32, py: i32| {
+                let (fx, fy) = (px as f32 + 0.5 - cx as f32, py as f32 + 0.5 - cy as f32);
+                fx * fx + fy * fy <= rf * rf
+            };
+            for py in cy - r..cy + r {
+                for px in cx - r..cx + r {
+                    if inside(px, py) {
+                        let edge =
+                            !inside(px - 1, py) || !inside(px + 1, py) || !inside(px, py - 1) || !inside(px, py + 1);
+                        b.put(px, py, if edge { 3 } else { 4 }, Clip::FULL);
+                    }
+                }
+            }
+            assert!(a.px == b.px, "ellipse {cx},{cy} r={r}");
+        }
     }
 }
