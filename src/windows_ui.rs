@@ -333,6 +333,8 @@ pub fn already_running() -> bool {
 /// Attributes of a borderless child window that fills `parent`, the preview pane of the Screen Saver
 /// Settings window (the handle Windows passes after `/p`).
 pub fn preview_attributes(parent: isize) -> WindowAttributes {
+    // A handle that is already gone must not become the parent of a new window.
+    let parent = if window_exists(parent) { parent } else { 0 };
     let mut rect = RECT {
         left: 0,
         top: 0,

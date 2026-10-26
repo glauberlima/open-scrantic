@@ -81,12 +81,21 @@ pub struct ScreensaverData {
     pub exe: ExeData,
 }
 
+/// Largest data file read; the installed ones are a little over 1 MiB.
+const MAX_FILE_BYTES: u64 = 64 << 20;
+
 /// Reads a file from `dir`, matching the name case-insensitively (installs are often upper case).
 fn read_ci(dir: &Path, name: &str) -> Result<Vec<u8>> {
     let entries =
         fs::read_dir(dir).map_err(|e| AssetError::Missing(format!("screensaver directory {} ({e})", dir.display())))?;
     for entry in entries.flatten() {
         if entry.file_name().to_string_lossy().eq_ignore_ascii_case(name) {
+            let meta = fs::metadata(entry.path())?;
+            if !meta.is_file() || meta.len() > MAX_FILE_BYTES {
+                return Err(AssetError::Format(format!(
+                    "{name} is not a regular file of a plausible size"
+                )));
+            }
             return Ok(fs::read(entry.path())?);
         }
     }
@@ -232,13 +241,23 @@ mod tests {
     #[test]
     fn error_text_from_data_files_is_escaped_and_bounded() {
         for err in [
-            AssetError::Missing("]0;title[2J".into()),
-            AssetError::Format("]52;c;AAAA".into()),
+            AssetError::Missing("\x1b]0;title\x07\x1b[2J".into()),
+            AssetError::Format("\x1b]52;c;AAAA\x07".into()),
         ] {
             let msg = err.to_string();
-            assert!(!msg.contains(['', '']), "raw control byte in {msg:?}");
+            assert!(!msg.contains(['\x1b', '\x07']), "raw control byte in {msg:?}");
         }
         let long = AssetError::Format("x".repeat(1 << 20)).to_string();
         assert!(long.len() < 512, "{} bytes", long.len());
+    }
+
+    #[test]
+    fn a_data_file_that_is_not_a_regular_file_is_refused() {
+        let dir = std::env::temp_dir().join(format!("open-scrantic-readci-{}", std::process::id()));
+        fs::create_dir_all(dir.join("RESOURCE.MAP")).unwrap(); // a folder where the file should be
+        fs::write(dir.join("SCRANTIC.SCR"), b"ok").unwrap();
+        assert!(read_ci(&dir, "RESOURCE.MAP").is_err());
+        assert_eq!(read_ci(&dir, "scrantic.scr").unwrap(), b"ok");
+        let _ = fs::remove_dir_all(dir);
     }
 }

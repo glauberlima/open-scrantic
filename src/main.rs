@@ -114,7 +114,13 @@ impl App {
         for (suffix, frame) in [("raw", present::plain(px, pal)), ("view", view)] {
             let path = open_scrantic::app_dir().join(format!("{name}-{suffix}.png"));
             let png = present::png(WIDTH as usize, HEIGHT as usize, &frame);
-            match std::fs::write(&path, png) {
+            // `create_new` so that a file (or a link planted under that name) is never overwritten.
+            let saved = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)
+                .and_then(|mut f| std::io::Write::write_all(&mut f, &png));
+            match saved {
                 Ok(()) => eprintln!("saved {}", path.display()),
                 Err(e) => eprintln!("warning: cannot save {}: {e}", path.display()),
             }
