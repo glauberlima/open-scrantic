@@ -12,6 +12,11 @@ use crate::assets::{AssetError, Result};
 
 const TAG_FIRST_RUN: u16 = 8;
 
+/// Deepest nesting of IF / RANDOM blocks the interpreter follows. The installed scripts nest a few levels;
+/// the limit keeps a crafted script from exhausting the stack (`panic = "abort"` makes that fatal) or from
+/// making each tick quadratic in the script size.
+const MAX_DEPTH: u32 = 32;
+
 /// Tag states (low bits of `Tag::state`).
 const TAG_RUNNING: u16 = 1;
 const TAG_STOPPED: u16 = 2;
@@ -41,6 +46,8 @@ pub struct AdsRuntime {
     brk: bool,
     cond: bool,
     now: u32,
+    /// Current nesting of `exec` / `skip_block` calls.
+    depth: u32,
 }
 
 fn is_condition(op: u16) -> bool {
@@ -73,6 +80,7 @@ impl AdsRuntime {
             brk: false,
             cond: false,
             now: 0,
+            depth: 0,
         };
         // seg10:04fc: tags are 0xFFFF-separated sections, each starting with its id.
         let mut p = Some(2usize);
@@ -236,7 +244,17 @@ impl AdsRuntime {
     // ---- block structure ----
 
     /// seg10:106b – skip to the matching ELSE/ENDIF.
-    fn skip_block(&mut self, mut p: usize) -> Option<usize> {
+    fn skip_block(&mut self, p: usize) -> Option<usize> {
+        if self.depth >= MAX_DEPTH {
+            return None;
+        }
+        self.depth += 1;
+        let r = self.skip_block_inner(p);
+        self.depth -= 1;
+        r
+    }
+
+    fn skip_block_inner(&mut self, mut p: usize) -> Option<usize> {
         loop {
             let op = self.w(p);
             match op {
@@ -302,7 +320,7 @@ impl AdsRuntime {
         let mut total = 0i32;
         let mut p = start;
         while self.w(p) != 0x30FF {
-            total += self.weight(p);
+            total = total.saturating_add(self.weight(p));
             p = self.next(p)?;
         }
         let after = p + 2;
@@ -346,6 +364,16 @@ impl AdsRuntime {
 
     /// seg10:1519 – execute one statement, returning the next one (None stops the tag).
     fn exec(&mut self, p: usize, rng: &mut Rng) -> Option<usize> {
+        if self.depth >= MAX_DEPTH {
+            return None;
+        }
+        self.depth += 1;
+        let r = self.exec_inner(p, rng);
+        self.depth -= 1;
+        r
+    }
+
+    fn exec_inner(&mut self, p: usize, rng: &mut Rng) -> Option<usize> {
         let op = self.w(p);
         let (a0, a1, a2) = (self.arg(p, 0), self.arg(p, 1), self.arg(p, 2));
         match op {
@@ -564,5 +592,147 @@ impl AdsRuntime {
             }
         }
         ran
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chunk(tag: &[u8; 4], body: &[u8]) -> Vec<u8> {
+        let mut v = tag.to_vec();
+        v.extend_from_slice(&(body.len() as u32).to_le_bytes());
+        v.extend_from_slice(body);
+        v
+    }
+
+    /// Method 1 (RLE) payload holding `data` as literal runs.
+    fn rle(data: &[u8]) -> Vec<u8> {
+        let mut v = vec![1u8];
+        v.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        for c in data.chunks(0x7F) {
+            v.push(c.len() as u8);
+            v.extend_from_slice(c);
+        }
+        v
+    }
+
+    /// An archive with one ADS, `A.ADS`, that has no TTMs and the given script.
+    fn archive_with_script(script: &[u8]) -> Archive {
+        let mut body = chunk(b"RES:", &[0, 0]);
+        body.extend(chunk(b"SCR:", &rle(script)));
+        let mut volume = vec![0u8; 13];
+        volume[..5].copy_from_slice(b"A.ADS");
+        volume.extend_from_slice(&(body.len() as u32).to_le_bytes());
+        volume.extend(body);
+        let mut map = vec![0u8; 21];
+        map[19] = 1;
+        map.extend_from_slice(&[0; 8]);
+        Archive::new(&map, &volume).unwrap()
+    }
+
+    /// Tag 1 holding `ops`, ended by the 0xFFFF separator.
+    fn script(ops: &[u16]) -> Vec<u8> {
+        std::iter::once(1u16)
+            .chain(ops.iter().copied())
+            .chain([0xFFFF, 0])
+            .flat_map(u16::to_le_bytes)
+            .collect()
+    }
+
+    fn runtime(ops: &[u16]) -> AdsRuntime {
+        AdsRuntime::load(&archive_with_script(&script(ops)), 1, "A.ADS").unwrap()
+    }
+
+    fn rng() -> Rng {
+        Rng::new([0; 56], 24, 55)
+    }
+
+    /// Runs `f` on a thread with the stack the engine's main thread has and reports whether it returned within
+    /// five seconds. A stack overflow aborts the whole process, which also fails the test.
+    fn finishes_promptly(f: impl FnOnce() + Send + 'static) -> bool {
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::Builder::new()
+            .stack_size(1 << 20)
+            .spawn(move || {
+                f();
+                let _ = tx.send(());
+            })
+            .unwrap();
+        rx.recv_timeout(std::time::Duration::from_secs(5)).is_ok()
+    }
+
+    #[test]
+    fn deeply_nested_conditions_run_without_overflowing_the_stack() {
+        // IF (scene never played) x 100k: each nested block runs, then recurses.
+        let ops: Vec<u16> = (0..100_000).flat_map(|_| [0x1330, 0, 0]).collect();
+        assert!(finishes_promptly(move || {
+            let mut ads = runtime(&ops);
+            ads.run_block(2, &mut rng());
+        }));
+    }
+
+    #[test]
+    fn deeply_nested_skipped_conditions_do_not_overflow_the_stack() {
+        // IF (scene is running) x 100k: false, so the whole nest is skipped by recursion.
+        let ops: Vec<u16> = (0..100_000).flat_map(|_| [0x1370, 0, 0]).collect();
+        assert!(finishes_promptly(move || {
+            let mut ads = runtime(&ops);
+            ads.run_block(2, &mut rng());
+        }));
+    }
+
+    #[test]
+    fn nested_random_blocks_are_bounded() {
+        let mut ops = vec![0x3010; 100_000];
+        ops.push(0x30FF);
+        assert!(finishes_promptly(move || {
+            let mut ads = runtime(&ops);
+            ads.run_block(2, &mut rng());
+        }));
+    }
+
+    #[test]
+    fn random_weights_that_overflow_do_not_panic() {
+        // 70k statements of weight 32767 sum past i32::MAX.
+        let mut ops: Vec<u16> = (0..70_000).flat_map(|_| [0x3020, 0x7FFF]).collect();
+        ops.push(0x30FF);
+        ops.insert(0, 0x3010);
+        assert!(finishes_promptly(move || {
+            let mut ads = runtime(&ops);
+            ads.run_block(2, &mut rng());
+        }));
+    }
+
+    #[test]
+    fn installed_scripts_nest_well_within_the_depth_limit() {
+        let Some(dir) = std::env::var_os("OPEN_SCRANTIC_DATA") else {
+            return;
+        };
+        let data = crate::assets::ScreensaverData::load(std::path::Path::new(&dir)).expect("load");
+        let mut deepest = 0;
+        for (&id, name) in &data.exe.ads_names {
+            let ads = AdsRuntime::load(&data.archive, id, name).unwrap_or_else(|e| panic!("{name}: {e}"));
+            let (mut depth, mut p, mut prev) = (0i32, 2, 0u16);
+            while let Some(q) = ads.next(p) {
+                let op = ads.w(p);
+                // A condition right after AND / OR continues the chain instead of opening a block.
+                let chained = prev == 0x1420 || prev == 0x1430;
+                match op {
+                    0xFFFF => depth = 0, // next tag
+                    op if (is_condition(op) && !chained) || (0x1010..=0x1080).contains(&op) && op & 0xF == 0 => {
+                        depth += 1
+                    }
+                    0x3010 => depth += 1,
+                    0x1510 | 0x1520 | 0x30FF => depth -= 1,
+                    _ => {}
+                }
+                deepest = deepest.max(depth);
+                prev = op;
+                p = q;
+            }
+        }
+        // Each level costs an `exec` and, when skipping, a `skip_block`.
+        assert!(2 * deepest as u32 + 2 <= MAX_DEPTH, "deepest nesting {deepest}");
     }
 }
