@@ -57,6 +57,9 @@ const DATA_SEGMENT: usize = 14;
 const WALK_SEGMENT: usize = 4;
 const PATH_JUMP_TABLE: usize = 0x04FB;
 
+/// Largest total of WAVE bytes decoded; the genuine sounds are far below this.
+const MAX_SOUND_BYTES: usize = 16 << 20;
+
 impl ExeData {
     pub fn parse(exe: &[u8]) -> Result<Self> {
         let ne = NeFile::parse(exe)?;
@@ -241,6 +244,7 @@ impl<'a> NeFile<'a> {
         }
         // RT_NAMETABLE (0x800F) maps the names used by the code to integer resource ids.
         let mut sounds = HashMap::new();
+        let mut budget = MAX_SOUND_BYTES;
         if let Some(names) = resources.get(&(0x800F, 0x8001)) {
             let mut q = 0;
             while q + 6 < names.len() && u16_at(names, q)? != 0 {
@@ -257,6 +261,10 @@ impl<'a> NeFile<'a> {
                 if let Some(n) = name.strip_prefix("WAVESFX").and_then(|n| n.parse::<u32>().ok())
                     && let Some(wav) = resources.get(&(type_id, res_id))
                 {
+                    // Several names may alias one resource; bound what they decode in total.
+                    budget = budget
+                        .checked_sub(wav.len())
+                        .ok_or_else(|| AssetError::Format("NE sound resources too large".into()))?;
                     sounds.insert(n, decode_wav(wav)?);
                 }
                 q += len;
@@ -281,4 +289,104 @@ fn decode_wav(wav: &[u8]) -> Result<Vec<f32>> {
         p += 8 + size + (size & 1);
     }
     Err(AssetError::Format("WAVE resource without data".into()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn put16(v: &mut [u8], o: usize, x: u16) {
+        v[o..o + 2].copy_from_slice(&x.to_le_bytes());
+    }
+
+    fn align(v: &mut Vec<u8>) -> usize {
+        while !v.len().is_multiple_of(16) {
+            v.push(0);
+        }
+        v.len()
+    }
+
+    /// Minimal synthetic NE with one WAVE resource of `wav_len` bytes that `n` name-table entries
+    /// (`WAVESFX1..=n`) all point at.
+    fn aliasing_exe(n: usize, wav_len: usize) -> Vec<u8> {
+        let mut f = vec![0u8; 0x200];
+        f[..2].copy_from_slice(b"MZ");
+        put16(&mut f, 0x3C, 0x40);
+        f[0x40..0x42].copy_from_slice(b"NE");
+        put16(&mut f, 0x40 + 0x1C, 14); // segment count
+        put16(&mut f, 0x40 + 0x22, 0x40); // segment table
+        put16(&mut f, 0x40 + 0x24, 0x40 + 14 * 8); // resource table
+        put16(&mut f, 0x40 + 0x32, 4); // segment shift
+        let seg = |i: usize| 0x80 + (i - 1) * 8;
+        let rt = 0x40 + 0x40 + 14 * 8;
+        // data segment (14)
+        let ds_off = align(&mut f);
+        let mut ds = vec![0u8; 0x2000];
+        ds[0x1681..0x168D].copy_from_slice(b"ACTIVITY.ADS");
+        ds[0x1D56..0x1D5F].copy_from_slice(b"WAVESFX%d");
+        f.extend_from_slice(&ds);
+        put16(&mut f, seg(14), (ds_off >> 4) as u16);
+        put16(&mut f, seg(14) + 2, 0x2000);
+        // walk code (4): every path handler is `mov ax, 0x1E00`
+        let wc_off = align(&mut f);
+        let mut wc = vec![0u8; 0x600];
+        for i in 0..34 {
+            wc[0x4FB + i * 2..0x4FB + i * 2 + 2].copy_from_slice(&0x580u16.to_le_bytes());
+        }
+        wc[0x580] = 0xB8;
+        wc[0x581..0x583].copy_from_slice(&0x1E00u16.to_le_bytes());
+        f.extend_from_slice(&wc);
+        put16(&mut f, seg(4), (wc_off >> 4) as u16);
+        put16(&mut f, seg(4) + 2, 0x600);
+        // the WAVE resource
+        let wav_off = align(&mut f);
+        let mut wav = Vec::from(*b"RIFF\0\0\0\0WAVEdata");
+        wav.extend_from_slice(&((wav_len - 20) as u32).to_le_bytes());
+        wav.resize(wav_len, 0x80);
+        f.extend_from_slice(&wav);
+        // RT_NAMETABLE: n names, all -> (0x8011, 0x8002)
+        let nt_off = align(&mut f);
+        let mut nt = Vec::new();
+        for k in 1..=n {
+            let name = format!("\0WAVESFX{k}");
+            nt.extend_from_slice(&((6 + name.len()) as u16).to_le_bytes());
+            nt.extend_from_slice(&0x8011u16.to_le_bytes());
+            nt.extend_from_slice(&0x8002u16.to_le_bytes());
+            nt.extend_from_slice(name.as_bytes());
+        }
+        nt.extend_from_slice(&[0u8; 8]);
+        f.extend_from_slice(&nt);
+        align(&mut f);
+        // resource table
+        let mut r = 4u16.to_le_bytes().to_vec();
+        for (t, id, off, len) in [
+            (0x800Fu16, 0x8001u16, nt_off, nt.len()),
+            (0x8011, 0x8002, wav_off, wav_len),
+        ] {
+            r.extend_from_slice(&t.to_le_bytes());
+            r.extend_from_slice(&1u16.to_le_bytes());
+            r.extend_from_slice(&[0; 4]);
+            r.extend_from_slice(&((off >> 4) as u16).to_le_bytes());
+            r.extend_from_slice(&(len.div_ceil(16) as u16).to_le_bytes());
+            r.extend_from_slice(&[0; 2]);
+            r.extend_from_slice(&id.to_le_bytes());
+            r.extend_from_slice(&[0; 4]);
+        }
+        r.extend_from_slice(&[0; 2]);
+        f[rt..rt + r.len()].copy_from_slice(&r);
+        f
+    }
+
+    #[test]
+    fn aliased_sound_names_decode_within_budget() {
+        let exe = aliasing_exe(2, 256 << 10);
+        assert_eq!(ExeData::parse(&exe).expect("two aliases fit").sounds.len(), 2);
+    }
+
+    #[test]
+    fn many_aliases_of_one_wave_are_rejected() {
+        // 80 names x 256 KiB of WAVE exceed the 16 MiB budget while the file stays near 256 KiB.
+        let exe = aliasing_exe(80, 256 << 10);
+        assert!(ExeData::parse(&exe).is_err());
+    }
 }
