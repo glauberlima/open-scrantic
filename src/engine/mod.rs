@@ -16,7 +16,7 @@ use std::rc::Rc;
 use chrono::{Datelike, Local, Timelike};
 
 use crate::assets::resource::{Archive, Bmp};
-use crate::assets::{Result, ScreensaverData};
+use crate::assets::{AssetError, Result, ScreensaverData};
 use ads::AdsRuntime;
 use config::Config;
 use gfx::Canvas;
@@ -116,6 +116,10 @@ fn half_hour_slot(t: i32) -> i32 {
 
 impl Engine {
     pub fn new(data: ScreensaverData, config: Config, seed_time: u64) -> Result<Self> {
+        // `plan_session` ends every session with a final scene; without one it has nothing to plan.
+        if !data.exe.scenes.iter().any(|s| s.flags & SCENE_FINAL != 0) {
+            return Err(AssetError::Format("scene catalog has no final scene".into()));
+        }
         let palette = data.archive.palette("JOHNCAST.PAL")?;
         let johnwalk = Rc::new(data.archive.bmp("JOHNWALK.BMP")?);
         let island = Island::new(&data.archive, data.exe.whitecap_seqs.clone())?;
@@ -614,5 +618,69 @@ mod tests {
         assert_eq!(phase(1430), 11); // last daytime slot
         assert_eq!(phase(1500), 12); // night until 17:00
         assert_eq!(phase(1700), 0);
+    }
+
+    fn run_steps(engine: &mut Engine, steps: u64) {
+        let clock = Clock {
+            year: 1993,
+            month: 6,
+            day: 1,
+            hour: 10,
+            minute: 0,
+        };
+        let mut ticks = 0u64;
+        for step in 1..=steps {
+            while (ticks + 1) * TICK_MS <= step * STEP_MS {
+                ticks += 1;
+                engine.tick();
+            }
+            engine.step(&clock);
+        }
+    }
+
+    #[test]
+    fn an_empty_scene_catalog_is_rejected() {
+        let Some(mut data) = screensaver_data() else { return };
+        data.exe.scenes.clear();
+        assert!(Engine::new(data, Config::default(), 1).is_err());
+    }
+
+    #[test]
+    fn a_catalog_without_a_final_scene_is_rejected() {
+        let Some(mut data) = screensaver_data() else { return };
+        data.exe.scenes.retain(|s| s.flags & SCENE_FINAL == 0);
+        assert!(Engine::new(data, Config::default(), 1).is_err());
+    }
+
+    #[test]
+    fn zero_scene_weights_still_plan_sessions() {
+        let Some(mut data) = screensaver_data() else { return };
+        for s in &mut data.exe.scenes {
+            s.weight = 0;
+        }
+        let mut engine = Engine::new(data, Config::default(), 7).unwrap();
+        run_steps(&mut engine, 1500);
+    }
+
+    #[test]
+    fn weights_summing_past_65535_still_plan_sessions() {
+        let Some(mut data) = screensaver_data() else { return };
+        let catalog = data.exe.scenes.clone();
+        for _ in 0..40 {
+            data.exe.scenes.extend(catalog.iter().cloned());
+        }
+        for s in &mut data.exe.scenes {
+            s.weight = 255;
+        }
+        let mut engine = Engine::new(data, Config::default(), 7).unwrap();
+        run_steps(&mut engine, 1500);
+    }
+
+    #[test]
+    fn routes_that_never_reach_the_target_do_not_panic() {
+        let Some(mut data) = screensaver_data() else { return };
+        data.exe.routes.clear();
+        let mut engine = Engine::new(data, Config::default(), 7).unwrap();
+        run_steps(&mut engine, 1500);
     }
 }
