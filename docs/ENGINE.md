@@ -155,6 +155,13 @@ not "fix" them:
   passes over them).
 - Malformed or truncated files are reported as errors instead of crashing, and the loaders cap the
   size of decompressed data.
+- Limits the original does not have, all far above anything the installed files need, so that tampered data
+  cannot exhaust memory, time or the stack: 16 MiB of decoded `WAVE` data (`assets/exe.rs`), one copy of the
+  volume with entries as ranges (`resource.rs`), 100,000 instructions per TTM, 2M pixels per BMP, 16 TTMs and
+  250,000 instructions per ADS, 32 picture or bitmap loads per TTM frame, 32 levels of nested ADS blocks, an LZW
+  stream must start with a literal, and the engine refuses a scene catalog without a final scene. Error
+  messages escape control characters and cap data-file text (`AssetError`). TTM `rect` and `ellipse` only visit
+  the part inside the clip; the pixels drawn are the same.
 - The final-scene pick gives up after a bounded number of draws instead of looping forever.
 - The title screen stays up for 2 s (on 1992 hardware it was visible while the first session loaded).
 - `--dedither` (`src/present.rs`, not in the original) replaces every 2x2 checkerboard (`a b / b a`)
