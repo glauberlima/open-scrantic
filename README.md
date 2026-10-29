@@ -74,7 +74,7 @@ also need the three [original files](#what-you-need).
    ```powershell
    New-Item -ItemType Directory -Force "$env:APPDATA\OpenScrantic" | Out-Null
    Copy-Item SCRANTIC.SCR, RESOURCE.MAP, RESOURCE.001 "$env:APPDATA\OpenScrantic"
-   Copy-Item .\open-scrantic-windows-x64.scr C:\Windows\System32\OpenScrantic.scr
+   Copy-Item .\open-scrantic-windows-x64.scr "$env:SystemRoot\System32\OpenScrantic.scr"
    ```
 
 3. **Pick it**: open **Screen Saver Settings** (Settings, Personalization, Lock screen, Screen saver
@@ -86,7 +86,7 @@ That is all. To try it first without installing, right-click the `.scr` and choo
 <details>
 <summary>Details, settings and uninstall</summary>
 
-- The three original files go in `%APPDATA%\OpenScrantic` (`C:\Users\<you>\AppData\Roaming\OpenScrantic`),
+- The three original files go in `%APPDATA%\OpenScrantic` (usually `C:\Users\<you>\AppData\Roaming\OpenScrantic`),
   because Windows only lists screensavers that are in `System32`. The `.scr` looks for them beside itself
   first and then there; the first folder that has `SCRANTIC.SCR` is the install, and `SCRANTIC.INI` is
   always read and written in that same folder (so nothing is ever written to `System32`). If the files are
@@ -99,7 +99,7 @@ That is all. To try it first without installing, right-click the `.scr` and choo
   silent, in the monitor picture of the Screen Saver Settings window.
 - This build takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and none of the options of the
   regular program. On macOS and Linux there is no screensaver build.
-- To remove it, delete `C:\Windows\System32\OpenScrantic.scr` (as administrator) and the
+- To remove it, delete `%SystemRoot%\System32\OpenScrantic.scr` (as administrator) and the
   `%APPDATA%\OpenScrantic` folder.
 - SmartScreen warning? See [Your system refuses to open the file?](#get-started).
 
@@ -306,7 +306,7 @@ Source code under the [MIT License](LICENSE).
 
 <div align="center">
 
-Made in Campinas, Brazil 🇧🇷 with ❤️, [Claude Code](https://claude.com/claude-code) and
+Made in Campinas, Brazil 🇧🇷 with ❤️ and ☕, [Claude Code](https://claude.com/claude-code) and
 [REA](https://rea.tools/)
 
 </div>
