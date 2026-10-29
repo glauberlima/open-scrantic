@@ -4,7 +4,7 @@
 
 Please report security issues privately through
 [GitHub's private vulnerability reporting](https://github.com/glauberlima/open-scrantic/security/advisories/new)
-instead of opening a public issue. Include the version (`open-scrantic --version`), your operating
+instead of opening a public issue. Include the version (`open-scrantic --version`, or the Details tab of the `.scr` properties), your operating
 system and the steps to reproduce.
 
 ## Scope

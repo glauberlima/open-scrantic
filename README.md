@@ -132,7 +132,8 @@ On Windows, use `certutil -hashfile <file> SHA256`.
 
 ## Settings
 
-Options and story progress are stored in `SCRANTIC.INI`, next to the program. It is created on the
+Options and story progress are stored in `SCRANTIC.INI`, in the folder of the original files (next to the program; for the Windows
+screensaver, see [its details](#install-as-a-windows-screensaver)). It is created on the
 first run and rewritten when you exit normally, so edit it only while the program is closed. Keys are
 case-insensitive.
 
@@ -170,8 +171,8 @@ Maintained by the program; edit only to force a chapter or time of day.
 | `CurrentYear`, `CurrentMonth`, `CurrentDay` | `0`     | date of the last run, used to detect a new day                  |
 | `StartTime`                                 | `900`   | start of the 16-half-hour day/night cycle, as `HHMM`            |
 
-An out-of-range `NumDays` (below 2 or above 11) restarts the story at chapter 1 on the next day
-change.
+A `NumDays` of `0` or `1` restarts the story at chapter 1 on the next day change. A value above 11 is
+invalid, so the whole file is replaced by the defaults.
 
 </details>
 
@@ -228,7 +229,8 @@ cp /path/to/install/{SCRANTIC.SCR,RESOURCE.MAP,RESOURCE.001} target/release/
 target/release/open-scrantic
 ```
 
-The screensaver files and `SCRANTIC.INI` are always read from the directory of the executable.
+The screensaver files and `SCRANTIC.INI` are read from the directory of the executable (the Windows `.scr`
+build also looks in `%APPDATA%\OpenScrantic`).
 
 | Option          | Effect                                                       |
 | --------------- | ------------------------------------------------------------ |
@@ -277,7 +279,7 @@ convention and how to check a change against the original, and the
 
 CI (format, clippy, release build on Linux, macOS and Windows) runs on every pull request and push to
 `main`. A release is cut manually from the **Release** workflow (Actions tab): it derives the next
-version from the Conventional Commits since the last tag (git-cliff), builds the three binaries,
+version from the Conventional Commits since the last tag (git-cliff), builds the binaries (Windows `.exe` and `.scr`, macOS and Linux),
 scans them with VirusTotal, commits the updated `CHANGELOG.md`, tags the version and publishes the
 GitHub release with the binaries and their SHA-256 checksums. If no commit since the last tag
 deserves a release (`feat`, `fix`, `perf`, `refactor`, `docs`), nothing is published.

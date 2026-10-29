@@ -92,7 +92,9 @@ front of him.
 
 ## Timing and randomness
 
-- 16 ms tick (`4 × 1000/(13×18)` ms) for delays and timers; the story step runs on the 50 ms
+- 16 ms tick for delays and timers: a software timer table driven by `GetCurrentTime` has a base of
+  `1000 / (13×18)` = 4 ms (integer division, `seg9:076a` called with 13), and the tick callback `seg2:16ce` is
+  registered with a factor of 4 (`seg2:152a`), so 4 × 4 = 16 ms. The story step runs on the 50 ms
   `WM_TIMER` (actual 55 ms granularity on Windows 3.1). Both are emulated.
 - Additive lagged generator over a 56-word table (`DS:1CE6`), warmed up by discarding
   `time() & 0xFFFF` numbers.

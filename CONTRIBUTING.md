@@ -24,6 +24,9 @@ cargo fmt --check
 OPEN_SCRANTIC_DATA=/path/to/install cargo test
 ```
 
+On Windows, if you touch `src/saver.rs` or `src/windows_ui.rs`, also run `cargo clippy --all-targets --features screensaver`
+and `cargo test --features screensaver`: without the flag those files are not compiled.
+
 The tests that need the real files pass without doing anything when `OPEN_SCRANTIC_DATA` is not set, so set it
 to a directory with the three files before trusting a green run.
 
@@ -55,6 +58,6 @@ window. See `AGENTS.md` for details.
 
 ## Reporting a bug
 
-Open an issue with the form. It asks for `open-scrantic --version`, your operating system, the flags you
+Open an issue with the form. It asks for `open-scrantic --version` (for the Windows `.scr`, the version on the Details tab of its properties), your operating system, the flags you
 used, and, for a story or scene problem, the output of `OPEN_SCRANTIC_DEBUG=1 target/release/open-scrantic`.
 Report security problems privately, as described in [`SECURITY.md`](SECURITY.md).

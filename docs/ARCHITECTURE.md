@@ -39,7 +39,7 @@ Three layers, with dependencies pointing downward only:
 | Layer     | Modules                                             | Knows about                          |
 |-----------|-----------------------------------------------------|--------------------------------------|
 | Front end | `main.rs`, `cli.rs`, `present.rs`, `audio.rs`       | window, input, sound device, clocks  |
-| Engine    | `engine/*`                                          | scripts, story, drawing; no I/O      |
+| Engine    | `engine/*`                                          | scripts, story, drawing; no I/O besides `config.rs` (`SCRANTIC.INI`) |
 | Assets    | `assets/*`                                          | file formats; no engine state        |
 
 ## Module map

@@ -11,6 +11,7 @@
 - [ ] `cargo clippy --all-targets` has no warnings
 - [ ] `cargo fmt --check` passes
 - [ ] `OPEN_SCRANTIC_DATA=/path/to/install cargo test` passes
+- [ ] If `src/saver.rs` or `src/windows_ui.rs` changed: clippy and tests pass with `--features screensaver` (Windows)
 - [ ] The commit messages follow Conventional Commits and are in en-US
 - [ ] No screensaver data (`SCRANTIC.SCR`, `RESOURCE.MAP`, `RESOURCE.001`) is included
 - [ ] Ported logic cites the original address in a comment

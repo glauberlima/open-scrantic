@@ -11,8 +11,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: Output of `open-scrantic --version`, or the release you downloaded.
-      placeholder: open-scrantic 0.3.0
+      description: Output of `open-scrantic --version`, or the release you downloaded. The Windows screensaver (.scr) has no command line: use the version on the Details tab of the file's properties.
+      placeholder: open-scrantic x.y.z
     validations:
       required: true
   - type: dropdown

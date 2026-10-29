@@ -38,7 +38,7 @@ flowchart TB
         resource["resource.rs<br/>images, palette,<br/>TTM and ADS scripts"]
     end
 
-    subgraph engine["engine/ (no I/O)"]
+    subgraph engine["engine/ (I/O only in config.rs)"]
         story["mod.rs<br/>story planner, step, tick"]
         ads["ads.rs<br/>scene scheduler"]
         ttm["ttm.rs<br/>frame interpreter"]
