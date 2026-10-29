@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.5.0 — 2026-10-29
+
+### Bug Fixes
+
+- Bound the data-file loaders and interpreters (security audit run 1) (#5) ([7e820bc](https://github.com/glauberlima/open-scrantic/commit/7e820bce3b0e0336bb196a01628c1ced4d8ce9b1))
+- Enable DEDITHER only when it is set to 1 ([54ff24f](https://github.com/glauberlima/open-scrantic/commit/54ff24fc60bf8778406a601e1f67c48bd8addc4a))
+
+
+### Documentation
+
+- Document the Windows screensaver build ([fc12bbd](https://github.com/glauberlima/open-scrantic/commit/fc12bbd72e5099d084c8e2e448416249d757cbce))
+- Describe where the Windows screensaver finds its files ([58ca465](https://github.com/glauberlima/open-scrantic/commit/58ca46530d9b790851bc9d593c6b6a30b735b8d0))
+- Fix the steps to install the Windows screensaver ([60e8e5e](https://github.com/glauberlima/open-scrantic/commit/60e8e5ebc5fb7b1e02d30e930f8903bc16ffb884))
+- Make the Windows screensaver install a visible section (#4) ([8c04961](https://github.com/glauberlima/open-scrantic/commit/8c049614158f2adb09e517ce9e29da89e8a3ac38))
+- Link the demo as an animated GIF ([7c9df71](https://github.com/glauberlima/open-scrantic/commit/7c9df71ea8ade283ab4f68990ab4f10f97ad5060))
+- Fix statements that disagreed with the code ([25abf9e](https://github.com/glauberlima/open-scrantic/commit/25abf9e948096a31ef7085c1eb1bd98d59e765be))
+
+
+### Features
+
+- Add the screensaver build (/s, /c, /p) behind a cargo feature ([8894ae5](https://github.com/glauberlima/open-scrantic/commit/8894ae53ba9967c535403314eb931c53a670ee5a))
+- Find the original files in %APPDATA% and keep the INI with them ([6b8c08e](https://github.com/glauberlima/open-scrantic/commit/6b8c08e70240e561ea5b9e49e6ca956cd90b30f2))
+- Scale the settings dialog with the monitor's DPI ([683e586](https://github.com/glauberlima/open-scrantic/commit/683e5867fa7c00cff8dd73c54dc43e1aef86108a))
+- Make dedither and soft audio settings of the screensaver ([d700660](https://github.com/glauberlima/open-scrantic/commit/d7006606415a7fdf928b70f95dc65bfed8482d7e))
+- Embed version information in the screensaver ([04cd280](https://github.com/glauberlima/open-scrantic/commit/04cd28013b7fabc26c61ef952a611fb0c45bdbf8))
+- Add the application icon ([a6cd078](https://github.com/glauberlima/open-scrantic/commit/a6cd07818fee0a2bb0c94a1ecb8239ed521ae72a))
+
+
+### Performance
+
+- Scale the frame 3.7 times faster ([7319f84](https://github.com/glauberlima/open-scrantic/commit/7319f841f3a2c7383c143e2bb940d6266c695e0e))
+
+
+### Refactoring
+
+- Replace the fullscreen and preview flags with a Surface enum ([d9e8eb5](https://github.com/glauberlima/open-scrantic/commit/d9e8eb55533606f08c5595ffbef3cab665457976))
+
 ## v0.4.0 — 2026-10-21
 
 ### Bug Fixes
