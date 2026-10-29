@@ -29,8 +29,6 @@ pub struct Options {
     /// The whole screen for a run, the preview pane for `/p`. A preview is silent and neither ends on input
     /// nor saves progress.
     surface: Surface,
-    pub dedither: bool,
-    pub soft_audio: bool,
 }
 
 impl Options {
@@ -64,20 +62,13 @@ impl Options {
     }
 
     /// The sound output; a preview has none.
-    pub fn audio(&self) -> Option<audio::Audio> {
+    pub fn audio(&self, run: &Config) -> Option<audio::Audio> {
         match self.surface {
-            Surface::Fullscreen => audio::Audio::new(self.soft_audio),
+            Surface::Fullscreen => audio::Audio::new(run.soft_audio),
             _ => None,
         }
     }
 }
-
-/// The screensaver always runs fullscreen with the image and sound improvements on.
-const OPTIONS: Options = Options {
-    surface: Surface::Fullscreen,
-    dedither: true,
-    soft_audio: true,
-};
 
 /// `/c:1234`, `/p 1234` and `/p:1234` carry a window handle; the part after the colon is `inline`,
 /// otherwise the handle is the next argument if that is a number.
@@ -117,11 +108,11 @@ fn parse(args: impl Iterator<Item = String>) -> Mode {
 pub fn start() -> Option<Options> {
     match parse(std::env::args().skip(1)) {
         Mode::Run if windows_ui::already_running() => None,
-        Mode::Run => Some(OPTIONS),
+        Mode::Run => Some(Options {
+            surface: Surface::Fullscreen,
+        }),
         Mode::Preview(parent) => Some(Options {
             surface: Surface::Embedded(parent),
-            soft_audio: false,
-            ..OPTIONS
         }),
         Mode::Configure(owner) => {
             configure(owner);
@@ -149,7 +140,7 @@ Copy SCRANTIC.SCR, RESOURCE.MAP and RESOURCE.001 of the original screensaver to:
     }
 }
 
-/// `/c`: lets the user toggle the four INI options. The INI lives with the original files, so without them
+/// `/c`: lets the user toggle the six INI options. The INI lives with the original files, so without them
 /// there is nothing to configure yet.
 fn configure(owner: Option<isize>) {
     if let Err(e) = assets::locate(&open_scrantic::data_dirs()) {
@@ -157,9 +148,23 @@ fn configure(owner: Option<isize>) {
         return;
     }
     let mut cfg = Config::load();
-    let current = [cfg.background, cfg.clouds, cfg.waves, cfg.sounds];
+    let current = [
+        cfg.background,
+        cfg.clouds,
+        cfg.waves,
+        cfg.sounds,
+        cfg.dedither,
+        cfg.soft_audio,
+    ];
     if let Some(new) = windows_ui::settings_dialog(current, owner) {
-        [cfg.background, cfg.clouds, cfg.waves, cfg.sounds] = new;
+        [
+            cfg.background,
+            cfg.clouds,
+            cfg.waves,
+            cfg.sounds,
+            cfg.dedither,
+            cfg.soft_audio,
+        ] = new;
         if let Err(e) = cfg.save() {
             windows_ui::error_box(&format!("Cannot save {}: {e}", Config::path().display()));
         }

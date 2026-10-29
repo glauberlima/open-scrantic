@@ -44,16 +44,19 @@ impl Overrides {
 
 pub struct Options {
     fullscreen: bool,
-    pub dedither: bool,
-    pub soft_audio: bool,
+    dedither: bool,
+    soft_audio: bool,
     overrides: Overrides,
 }
 
 impl Options {
-    /// The settings of this run: the INI's, with the overrides of the command line applied.
+    /// The settings of this run: the INI's, with the command line applied (the flags only turn the
+    /// improvements on).
     pub fn config(&self, saved: &Config) -> Config {
         let mut config = saved.clone();
         self.overrides.apply(&mut config);
+        config.dedither |= self.dedither;
+        config.soft_audio |= self.soft_audio;
         config
     }
 
@@ -78,8 +81,8 @@ impl Options {
     }
 
     /// The sound output.
-    pub fn audio(&self) -> Option<audio::Audio> {
-        audio::Audio::new(self.soft_audio)
+    pub fn audio(&self, run: &Config) -> Option<audio::Audio> {
+        audio::Audio::new(run.soft_audio)
     }
 }
 

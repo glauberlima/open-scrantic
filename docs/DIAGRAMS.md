@@ -254,7 +254,7 @@ centered at 1:1 on a black full-screen window; the scaling below is a deliberate
 
 ```mermaid
 flowchart TD
-    F["front canvas<br/>640x480 palette indices"] --> Q{"--dedither?"}
+    F["front canvas<br/>640x480 palette indices"] --> Q{"Dedither?"}
     Q -->|no| PL["present::plain<br/>palette lookup"]
     Q -->|yes| DD["present::dedither<br/>2x2 checkerboards and alternating<br/>runs blended in sRGB"]
     PL --> SC
@@ -330,7 +330,7 @@ flowchart TD
     TS --> G{"Sounds=1 and a device?"}
     G -->|no| SIL(["silent"])
     G -->|yes| PLAY["Audio::play(bank, id)"]
-    PLAY --> M{"--soft-audio?"}
+    PLAY --> M{"SoftAudio?"}
 
     M -->|no| PLN["Plain<br/>new Player on the mixer;<br/>dropping the previous one cuts it hard"]
     PLN --> RS1["rodio resamples 11,025 Hz to the device<br/>by linear interpolation"]
@@ -345,7 +345,7 @@ flowchart TD
 
 ## 13. Settings: `SCRANTIC.INI` and the command line
 
-Four options (`Background`, `Clouds`, `Waves`, `Sounds`) can be overridden for one run. The rest of the
+Four options (`Background`, `Clouds`, `Waves`, `Sounds`) can be overridden for one run, and `--dedither` and `--soft-audio` turn on `Dedither` and `SoftAudio`. The rest of the
 file is story progress and is not user-facing.
 
 ```mermaid
@@ -357,7 +357,7 @@ flowchart TD
 
     ENG --> RUN(["run: story progress changes<br/>NumDays, Introduction, date, StartTime"])
     RUN --> EXIT["exiting() on a clean exit"]
-    EXIT --> W["engine config + the four options<br/>taken back from saved"]
+    EXIT --> W["engine config + the six options<br/>taken back from saved"]
     SV --> W
     W --> FILE[("SCRANTIC.INI")]
 ```

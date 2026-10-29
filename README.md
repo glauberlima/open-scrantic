@@ -78,7 +78,8 @@ also need the three [original files](#what-you-need).
    ```
 
 3. **Pick it**: open **Screen Saver Settings** (Settings, Personalization, Lock screen, Screen saver
-   settings), choose **OpenScrantic** and set the wait time. Click **Preview** to check it.
+   settings), choose **OpenScrantic** and set the wait time. Click **Preview** to check it. Shortcut: press
+   `Win+R` (or run in a terminal) `control desk.cpl,,@screensaver` to open that window directly.
 
 That is all. To try it first without installing, right-click the `.scr` and choose **Test**.
 
@@ -92,9 +93,9 @@ That is all. To try it first without installing, right-click the `.scr` and choo
   missing, the screensaver says where to put them and creates that folder.
 - If your administrator account is not the one you use every day, `%APPDATA%` in step 2 points to the
   administrator's profile; copy the three files to your own `%APPDATA%\OpenScrantic` instead.
-- When Windows starts it (`/s`) it runs fullscreen with `--dedither` and `--soft-audio` already on, and
+- When Windows starts it (`/s`) it runs fullscreen and
   exits on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background,
-  Clouds, Waves and Sounds checkboxes, saved to `SCRANTIC.INI`, and **Preview** (`/p`) draws the island,
+  Clouds, Waves, Sounds, Dedither and Soft audio checkboxes (the last two are off by default), saved to `SCRANTIC.INI`, and **Preview** (`/p`) draws the island,
   silent, in the monitor picture of the Screen Saver Settings window.
 - This build takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and none of the options of the
   regular program. On macOS and Linux there is no screensaver build.
@@ -143,6 +144,9 @@ case-insensitive.
 | `Clouds`     | no clouds in the sky              |
 | `Waves`      | no ocean whitecaps                |
 | `Sounds`     | sound effects muted               |
+
+Two more keys are not in the original: `Dedither` and `SoftAudio` (off by default, `1` turns them on; the same as
+`--dedither` and `--soft-audio`).
 
 The original settings dialog offered only *Load Background* (`Background`), *Sounds*, a password and the start of
 the day. `Clouds` and `Waves` were never in the dialog: they can only be changed in this file, or on the

@@ -12,6 +12,10 @@ pub struct Config {
     pub clouds: bool,
     pub waves: bool,
     pub sounds: bool,
+    /// Not in the original: blend the checkerboard dithering ("Dedither").
+    pub dedither: bool,
+    /// Not in the original: improved sound playback ("SoftAudio").
+    pub soft_audio: bool,
     /// Furthest story chapter unlocked ("NumDays").
     pub num_days: i32,
     /// Next story chapter to show ("Introduction").
@@ -31,6 +35,8 @@ impl Default for Config {
             clouds: true,
             waves: true,
             sounds: true,
+            dedither: false,
+            soft_audio: false,
             num_days: 0,
             intro: 0,
             intro_saved: 0,
@@ -101,6 +107,8 @@ impl Config {
                 "clouds" => cfg.clouds = flag(v)?,
                 "waves" => cfg.waves = flag(v)?,
                 "sounds" => cfg.sounds = flag(v)?,
+                "dedither" => cfg.dedither = flag(v)?,
+                "softaudio" => cfg.soft_audio = flag(v)?,
                 "numdays" => cfg.num_days = range(v, 11)?,
                 "introduction" => cfg.intro = range(v, 12)?,
                 "currentyear" => cfg.year = range(v, 9999)?,
@@ -122,12 +130,14 @@ impl Config {
         };
         let b = |v: bool| i32::from(v);
         let text = format!(
-            "{SECTION}\nBackground={}\nClouds={}\nWaves={}\nSounds={}\nNumDays={}\n\
+            "{SECTION}\nBackground={}\nClouds={}\nWaves={}\nSounds={}\nDedither={}\nSoftAudio={}\nNumDays={}\n\
              Introduction={}\nCurrentYear={}\nCurrentMonth={}\nCurrentDay={}\nStartTime={}\n",
             b(self.background),
             b(self.clouds),
             b(self.waves),
             b(self.sounds),
+            b(self.dedither),
+            b(self.soft_audio),
             self.num_days,
             intro,
             self.year,
@@ -160,11 +170,21 @@ mod tests {
     }
 
     #[test]
+    fn improvements_are_off_by_default_and_round_trip() {
+        let cfg = Config::default();
+        assert!(!cfg.dedither && !cfg.soft_audio);
+        let cfg = Config::parse(&format!("{SECTION}\nDedither=1\nSoftAudio=1\n")).unwrap();
+        assert!(cfg.dedither && cfg.soft_audio);
+    }
+
+    #[test]
     fn invalid_values_are_rejected() {
         for bad in [
             "Sounds=2",
             "Sounds=abc",
             "Sounds=",
+            "Dedither=2",
+            "SoftAudio=x",
             "NumDays=12",
             "Introduction=-1",
             "StartTime=960",

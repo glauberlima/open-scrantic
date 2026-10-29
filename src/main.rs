@@ -286,11 +286,20 @@ impl ApplicationHandler for App {
             return;
         }
         let mut cfg = self.engine.config.clone();
-        (cfg.background, cfg.clouds, cfg.waves, cfg.sounds) = (
+        (
+            cfg.background,
+            cfg.clouds,
+            cfg.waves,
+            cfg.sounds,
+            cfg.dedither,
+            cfg.soft_audio,
+        ) = (
             self.saved.background,
             self.saved.clouds,
             self.saved.waves,
             self.saved.sounds,
+            self.saved.dedither,
+            self.saved.soft_audio,
         );
         if let Err(e) = cfg.save() {
             eprintln!("warning: cannot save settings: {e}");
@@ -316,8 +325,10 @@ fn main() {
         .map(|d| d.as_secs())
         .unwrap_or(0);
     let saved = Config::load();
-    let engine = Engine::new(data, opts.config(&saved), seed).unwrap_or_else(|e| opts.fail(e));
-    let audio = opts.audio();
+    let run = opts.config(&saved);
+    let audio = opts.audio(&run);
+    let dedither = run.dedither;
+    let engine = Engine::new(data, run, seed).unwrap_or_else(|e| opts.fail(e));
     let event_loop = EventLoop::new().unwrap_or_else(|e| opts.fail(e));
     let mut app = App {
         engine,
@@ -330,7 +341,7 @@ fn main() {
         target: opts.surface(),
         #[cfg(feature = "screensaver")]
         input: opts.input_guard(),
-        dedither: opts.dedither,
+        dedither,
         saved,
         screenshot: false,
         intro_drawn: false,

@@ -164,7 +164,7 @@ not "fix" them:
   the part inside the clip; the pixels drawn are the same.
 - The final-scene pick gives up after a bounded number of draws instead of looping forever.
 - The title screen stays up for 2 s (on 1992 hardware it was visible while the first session loaded).
-- `--dedither` (`src/present.rs`, not in the original) replaces every 2x2 checkerboard (`a b / b a`)
+- `--dedither` / `Dedither=1` (`src/present.rs`, not in the original, off by default) replaces every 2x2 checkerboard (`a b / b a`)
   with the average of its two colors, taken in the palette's own sRGB values (not in linear light); the dither of the original is this pattern in
   two palette indices. Where a dithered area ends in a one-pixel line, alternating runs of 4 or more
   pixels (rows and columns) are blended too, minus an end pixel that touches an equal neighbor (the
@@ -176,7 +176,7 @@ not "fix" them:
   the 640x480 canvas and presentation mode 3 in `seg1:1448`, and the draw routine (`seg8:07e8`) centers the canvas
   at 1:1 (`(screen - canvas) / 2` added to the destination) on a black background (`WM_ERASEBKGND` fills with
   `BLACK_BRUSH`). Its other modes only scale by 2 or 1/2, never by a fraction.
-- `--soft-audio` (`src/audio.rs`, not in the original, off by default) resamples the 11,025 Hz sounds to
+- `--soft-audio` / `SoftAudio=1` (`src/audio.rs`, not in the original, off by default) resamples the 11,025 Hz sounds to
   the device rate, low-passes them and fades a cut sound out over 3 ms. Which sound plays when is
   unchanged.
 - The audio device buffer is a fixed 8192 frames on Linux (rodio's default is 50 ms, which underruns on some

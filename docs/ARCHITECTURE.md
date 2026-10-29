@@ -73,7 +73,7 @@ a mode of the regular one: everything of the other flavor is compiled out, so th
 code and the `.scr` has no command line besides what Windows passes.
 
 - `saver::start` reads `/s` (run), `/c` or no argument (settings dialog) and `/p HWND` (preview) and ignores anything
-  else, `/a` included. A run is always fullscreen with `--dedither` and `--soft-audio`.
+  else, `/a` included. A run is always fullscreen; dedithering and soft audio follow the `Dedither` and `SoftAudio` INI keys (off by default).
 - `saver::InputGuard` ends a run on a key or button press, the wheel, losing the focus, or the cursor moving more than
   4 px from where it first appeared. Input is ignored for the first second, as Windows sends events of its own when
   it creates the window, and losing the focus counts only once the window has had it.
@@ -254,12 +254,12 @@ endless mono `Stream` feeds the mixer, and `Audio::play` fades the sound it cuts
 
 ## Persistence
 
-`Config` maps `[ScreenSaver.ScreenAntics]` in `SCRANTIC.INI` to fields: four options
-(`Background`, `Clouds`, `Waves`, `Sounds`) and the story state (`NumDays`, `Introduction`, the date
+`Config` maps `[ScreenSaver.ScreenAntics]` in `SCRANTIC.INI` to fields: six options
+(`Background`, `Clouds`, `Waves`, `Sounds`, plus `Dedither` and `SoftAudio`, which are not in the original) and the story state (`NumDays`, `Introduction`, the date
 of the last run, `StartTime`). Parsing is strict: any invalid value replaces the whole file with the
 defaults. The file is written once, on clean exit (`ApplicationHandler::exiting`). The command-line options
-`--background`, `--clouds`, `--waves` and `--sounds` (`0`/`1`) override the four options for one run:
-`main.rs` keeps the settings as loaded (`App::saved`) and writes those four back, so an override is never
+`--background`, `--clouds`, `--waves` and `--sounds` (`0`/`1`) override four of the six options for one run:
+`main.rs` keeps the settings as loaded (`App::saved`) and writes those six back, so an override is never
 persisted.
 
 ## Testing and debugging

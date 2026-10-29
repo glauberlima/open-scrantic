@@ -32,17 +32,17 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     WS_VISIBLE,
 };
 
-const TITLE: &str = "Open Scrantic - Settings";
+const TITLE: &str = "Open Scrantic";
 const CLASS: &str = "OpenScranticSettings";
-const LABELS: [&str; 4] = ["Background", "Clouds", "Waves", "Sounds"];
+const LABELS: [&str; 6] = ["Background", "Clouds", "Waves", "Sounds", "Dedither", "Soft audio"];
 /// Control id of the first checkbox; the others follow.
 const FIRST_CHECKBOX: i32 = 101;
-/// Set in [`RESULT`] when the user pressed OK; the low bits hold the four checkboxes.
+/// Set in [`RESULT`] when the user pressed OK; the low bits hold the six checkboxes.
 const ACCEPTED: u32 = 1 << 8;
 const CHECKED: usize = 1;
 
 const CLIENT_W: i32 = 280;
-const CLIENT_H: i32 = 188;
+const CLIENT_H: i32 = 236;
 /// `SS_CENTER`: static text centered in its box.
 const SS_CENTER: u32 = 1;
 const CHECKBOX_W: i32 = 110;
@@ -166,10 +166,10 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
     }
 }
 
-/// Shows the modal settings dialog with the Background, Clouds, Waves and Sounds checkboxes preset to
-/// `initial`. Returns the new values on OK, `None` on Cancel (or if the dialog cannot be created).
+/// Shows the modal settings dialog with the Background, Clouds, Waves, Sounds, Dedither and Soft audio
+/// checkboxes preset to `initial`. Returns the new values on OK, `None` on Cancel (or if the dialog cannot be created).
 /// `owner` is the window handle Windows passes after `/c:`; it is disabled while the dialog is open.
-pub fn settings_dialog(initial: [bool; 4], owner: Option<isize>) -> Option<[bool; 4]> {
+pub fn settings_dialog(initial: [bool; 6], owner: Option<isize>) -> Option<[bool; 6]> {
     RESULT.store(0, Ordering::Relaxed);
     let class = wide(CLASS);
     // SAFETY: plain Win32 calls; every pointer passed is valid for the duration of its call.
@@ -274,7 +274,7 @@ pub fn settings_dialog(initial: [bool; 4], owner: Option<isize>) -> Option<[bool
             );
             SendMessageW(check, BM_SETCHECK, usize::from(initial[i]), 0);
         }
-        let (button_w, gap, y, button_h) = (px(BUTTON_W), px(BUTTON_GAP), px(146), px(26));
+        let (button_w, gap, y, button_h) = (px(BUTTON_W), px(BUTTON_GAP), px(194), px(26));
         let x = (cw - 2 * button_w - gap) / 2;
         let ok = WS_TABSTOP | BS_DEFPUSHBUTTON as u32;
         child(hwnd, "BUTTON", "OK", ok, [x, y, button_w, button_h], IDOK, font);
@@ -391,7 +391,7 @@ mod tests {
     fn lengths_scale_with_the_dpi_and_round_to_the_nearest_pixel() {
         assert_eq!(scaled(280, 96), 280);
         assert_eq!(scaled(280, 144), 420);
-        assert_eq!(scaled(188, 120), 235);
+        assert_eq!(scaled(236, 120), 295);
         assert_eq!(scaled(1, 120), 1); // 1.25
         assert_eq!(scaled(3, 120), 4); // 3.75
         assert_eq!(scaled(0, 192), 0);
