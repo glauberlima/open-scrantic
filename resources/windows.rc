@@ -1,4 +1,4 @@
-// Screensaver name shown in the Windows Screen Saver Settings list (string resource 1).
+// Screensaver name shown in the Screen Saver Settings list (string resource 1). build.rs appends the version info.
 STRINGTABLE
 BEGIN
     1, "Open Scrantic"
