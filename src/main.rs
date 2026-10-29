@@ -19,7 +19,7 @@ use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ElementState, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
-use winit::window::{Fullscreen, Window, WindowAttributes, WindowId};
+use winit::window::{Fullscreen, Icon, Window, WindowAttributes, WindowId};
 
 use open_scrantic::engine::config::Config;
 use open_scrantic::engine::gfx::{HEIGHT, WIDTH};
@@ -169,9 +169,17 @@ fn center_on_primary_monitor(window: &Window, event_loop: &ActiveEventLoop) {
     window.set_outer_position(PhysicalPosition::new(x, y));
 }
 
+/// The window icon (`resources/icon.rgba`, 64x64; regenerate it with `scripts/make-icons.py`). Windows and X11
+/// show it; macOS and Wayland take the icon from the app bundle or the desktop file instead.
+fn window_icon() -> Option<Icon> {
+    Icon::from_rgba(include_bytes!("../resources/icon.rgba").to_vec(), 64, 64).ok()
+}
+
 impl App {
     fn window_attributes(&self, event_loop: &ActiveEventLoop) -> WindowAttributes {
-        let attrs = Window::default_attributes().with_title("Open Scrantic");
+        let attrs = Window::default_attributes()
+            .with_title("Open Scrantic")
+            .with_window_icon(window_icon());
         let min = PhysicalSize::new(WIDTH as u32, HEIGHT as u32);
         match self.target {
             Surface::Fullscreen => attrs

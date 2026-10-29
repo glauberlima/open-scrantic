@@ -63,7 +63,7 @@ Three layers, with dependencies pointing downward only:
 | `cli.rs`               | Command line of the regular program: `--fullscreen`, `--dedither`, `--soft-audio`, INI overrides | —              |
 | `saver.rs`             | Windows screensaver build only: the Windows switches (`/s`, `/c`, `/p`), input guard, fixed options | —           |
 | `windows_ui.rs`        | Windows screensaver build only: settings dialog, single-instance mutex, preview window, error box | —              |
-| `build.rs`, `resources/` | Windows screensaver build only: embeds the screensaver name and the manifest (visual styles)  | —              |
+| `build.rs`, `resources/` | Windows builds: embeds the icon and the version info (from `Cargo.toml`); the screensaver also gets its name and the manifest (visual styles) | —              |
 | `examples/snapshot.rs` | Headless run with a fixed clock that writes PNGs                                                | —              |
 
 ## Windows screensaver build
@@ -93,7 +93,7 @@ code and the `.scr` has no command line besides what Windows passes.
   nothing to configure and says where to put the files.
 - There is no console, so a fatal error of a run (missing files, ...) goes to `windows_ui::error_box`; the preview
   stays silent. The name in the Screen Saver Settings list is string resource 1 and the dialog gets visual styles
-  from the manifest; `build.rs` embeds both from `resources/`.
+  from the manifest; `build.rs` embeds both from `resources/`. The icon (`resources/icon.png` is the master; `scripts/make-icons.py` makes `icon.ico` for the Windows `.exe` and `.scr`, and `icon.rgba`, the window icon every platform shows where it can: Windows and X11) is embedded by `build.rs` too. A bare macOS or Linux executable cannot carry a file icon.
 - `windows_ui.rs` is the only module that allows `unsafe`; without the feature the crate has
   `#![forbid(unsafe_code)]`.
 
