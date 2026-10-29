@@ -95,7 +95,7 @@ fn main() {
         }
         if step % every == 0 {
             let px = &engine.frame().px;
-            let mut frame = if std::env::var_os("DEDITHER").is_some() {
+            let mut frame = if std::env::var_os("DEDITHER").is_some_and(|v| v == "1") {
                 present::dedither(px, &engine.palette)
             } else {
                 present::plain(px, &engine.palette)
