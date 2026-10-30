@@ -183,7 +183,11 @@ not "fix" them:
   unchanged.
 - The audio device buffer is a fixed 8192 frames on Linux (rodio's default is 50 ms, which underruns on some
   ALSA setups) and the driver's default elsewhere. The device is reopened on the next sound after a
-  non-underrun stream error.
+  non-underrun stream error, and at each following sound until a device opens.
+- The Windows screensaver (`/s`) shows the picture on the primary monitor and covers every other monitor with a
+  black, cursor-less window (`App::cover_other_monitors`), so the desktop stays hidden and input on any monitor ends
+  the run. The original, written for one screen, had no such windows; monitors plugged in during a run are not
+  covered. `--fullscreen` of the regular program still fills one monitor only.
 - Ellipses and lines use their own rasterization, which may differ by 1 px from GDI.
 - The configuration dialog and the screensaver password were not reimplemented (options can be
   edited in the INI). Features this screensaver does not use (animated palettes, 256 colors, ADS

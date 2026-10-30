@@ -93,7 +93,7 @@ That is all. To try it first without installing, right-click the `.scr` and choo
   missing, the screensaver says where to put them and creates that folder.
 - If your administrator account is not the one you use every day, `%APPDATA%` in step 2 points to the
   administrator's profile; copy the three files to your own `%APPDATA%\OpenScrantic` instead.
-- When Windows starts it (`/s`) it runs fullscreen and
+- When Windows starts it (`/s`) it runs fullscreen on the primary monitor (any other monitor goes black) and
   exits on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background,
   Clouds, Waves, Sounds, Dedither and Soft audio checkboxes (the last two are off by default), saved to `SCRANTIC.INI`, and **Preview** (`/p`) draws the island,
   silent, in the monitor picture of the Screen Saver Settings window.

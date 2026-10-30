@@ -45,11 +45,15 @@ enum Surface {
     Embedded(isize),
 }
 
+type Canvas = softbuffer::Surface<Rc<Window>, Rc<Window>>;
+
 struct App {
     engine: Engine,
     audio: Option<audio::Audio>,
     window: Option<Rc<Window>>,
-    surface: Option<softbuffer::Surface<Rc<Window>, Rc<Window>>>,
+    surface: Option<Canvas>,
+    /// Black windows over the monitors other than the one showing the picture (screensaver build only).
+    covers: Vec<Canvas>,
     start: Instant,
     steps: u64,
     ticks: u64,
@@ -154,6 +158,21 @@ impl App {
     }
 }
 
+/// Fills a cover window with black.
+fn paint_black(canvas: &mut Canvas) {
+    let size = canvas.window().inner_size();
+    let (Some(w), Some(h)) = (NonZeroU32::new(size.width), NonZeroU32::new(size.height)) else {
+        return;
+    };
+    if canvas.resize(w, h).is_err() {
+        return;
+    }
+    if let Ok(mut buf) = canvas.buffer_mut() {
+        buf.fill(0);
+        let _ = buf.present();
+    }
+}
+
 /// Moves the window so its whole frame (title bar included) is centred on the primary monitor.
 fn center_on_primary_monitor(window: &Window, event_loop: &ActiveEventLoop) {
     let Some(monitor) = event_loop
@@ -176,15 +195,51 @@ fn window_icon() -> Option<Icon> {
 }
 
 impl App {
+    /// A screensaver run shows Johnny on the primary monitor and puts a black, cursor-less window on every other
+    /// one, so that the desktop does not stay visible there and input on any monitor ends the run.
+    #[cfg(feature = "screensaver")]
+    fn cover_other_monitors(&mut self, event_loop: &ActiveEventLoop, main: &Window) {
+        let Some(primary) = event_loop.primary_monitor() else {
+            return;
+        };
+        for monitor in event_loop.available_monitors().filter(|m| *m != primary) {
+            let attrs = Window::default_attributes()
+                .with_title("Open Scrantic")
+                .with_window_icon(window_icon())
+                .with_fullscreen(Some(Fullscreen::Borderless(Some(monitor))));
+            // A monitor that cannot be covered is skipped; it must not stop the screensaver.
+            let Ok(window) = event_loop.create_window(attrs).map(Rc::new) else {
+                continue;
+            };
+            window.set_cursor_visible(false);
+            let canvas = softbuffer::Context::new(Rc::clone(&window))
+                .and_then(|ctx| softbuffer::Surface::new(&ctx, Rc::clone(&window)));
+            if let Ok(canvas) = canvas {
+                window.request_redraw();
+                self.covers.push(canvas);
+            }
+        }
+        // The new windows take the focus; the guard treats losing it after its settling time as input.
+        main.focus_window();
+    }
+
     fn window_attributes(&self, event_loop: &ActiveEventLoop) -> WindowAttributes {
         let attrs = Window::default_attributes()
             .with_title("Open Scrantic")
             .with_window_icon(window_icon());
         let min = PhysicalSize::new(WIDTH as u32, HEIGHT as u32);
         match self.target {
-            Surface::Fullscreen => attrs
-                .with_min_inner_size(min)
-                .with_fullscreen(Some(Fullscreen::Borderless(None))),
+            Surface::Fullscreen => {
+                // The screensaver covers the other monitors itself (`cover_other_monitors`), so the picture goes
+                // on the primary one. Elsewhere it takes the monitor the window opens on.
+                #[cfg(feature = "screensaver")]
+                let monitor = event_loop.primary_monitor();
+                #[cfg(not(feature = "screensaver"))]
+                let monitor = None;
+                attrs
+                    .with_min_inner_size(min)
+                    .with_fullscreen(Some(Fullscreen::Borderless(monitor)))
+            }
             Surface::Window => {
                 // Largest whole multiple of the original 640x480 that fills at most 80% of the screen.
                 let k = event_loop
@@ -234,11 +289,15 @@ impl ApplicationHandler for App {
                 return;
             }
         }
+        #[cfg(feature = "screensaver")]
+        if self.target == Surface::Fullscreen {
+            self.cover_other_monitors(event_loop, &window);
+        }
         self.window = Some(window);
         self.start = Instant::now() + INTRO_HOLD;
     }
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, id: WindowId, event: WindowEvent) {
         #[cfg(feature = "screensaver")]
         if self.input.as_mut().is_some_and(|input| input.ends_run(&event)) {
             event_loop.exit();
@@ -246,7 +305,10 @@ impl ApplicationHandler for App {
         }
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::RedrawRequested => self.redraw(),
+            WindowEvent::RedrawRequested => match self.covers.iter_mut().find(|c| c.window().id() == id) {
+                Some(cover) => paint_black(cover),
+                None => self.redraw(),
+            },
             WindowEvent::KeyboardInput { event, .. }
                 if event.state == ElementState::Pressed && event.logical_key == Key::Named(NamedKey::Escape) =>
             {
@@ -343,6 +405,7 @@ fn main() {
         audio,
         window: None,
         surface: None,
+        covers: Vec::new(),
         start: Instant::now(),
         steps: 0,
         ticks: 0,

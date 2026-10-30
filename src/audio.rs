@@ -211,10 +211,12 @@ impl Audio {
 
     pub fn play(&mut self, bank: &HashMap<u32, Vec<f32>>, id: u32) {
         let Some(raw) = bank.get(&id) else { return };
-        if self.broken.swap(false, Ordering::Relaxed)
-            && let Ok((sink, mode)) = open(self.soft, &self.broken)
-        {
-            (self.sink, self.mode) = (sink, mode);
+        if self.broken.swap(false, Ordering::Relaxed) {
+            match open(self.soft, &self.broken) {
+                Ok((sink, mode)) => (self.sink, self.mode) = (sink, mode),
+                // No device yet (for instance right after an unplug): try again with the next sound.
+                Err(_) => self.broken.store(true, Ordering::Relaxed),
+            }
         }
         match &mut self.mode {
             Mode::Plain { current } => {

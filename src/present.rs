@@ -64,7 +64,8 @@ pub fn dedither(px: &[u8], pal: &[[u8; 3]; 256]) -> Vec<u32> {
                         partner[base + k * along].get_or_insert(px[base + neighbor * along]);
                     }
                 }
-                start = x;
+                // The pixel before `x` already belongs to the next run (`a b a b` after a third color).
+                start = x - 1;
             }
         }
     }
@@ -362,6 +363,20 @@ mod tests {
         assert_ne!(out[10 * W], pack(pal()[2]));
         assert_eq!(out[20 * W + 30], out[21 * W + 30]);
         assert_eq!(out[40 * W..40 * W + 3], plain(&px, &pal())[40 * W..40 * W + 3]);
+    }
+
+    #[test]
+    fn a_run_that_starts_right_after_a_third_color_is_blended_whole() {
+        // 1 1 1 0 2 0 2 1 1: the four-pixel run 0 2 0 2 begins at the pixel where the white ends.
+        let mut px = vec![1u8; W * H];
+        for (k, c) in [0u8, 2, 0, 2].into_iter().enumerate() {
+            px[10 * W + 103 + k] = c;
+        }
+        let out = dedither(&px, &pal());
+        let mid = pack([0, 0, 128]);
+        assert!((103..107).all(|x| out[10 * W + x] == mid));
+        assert_eq!(out[10 * W + 102], pack(pal()[1]));
+        assert_eq!(out[10 * W + 107], pack(pal()[1]));
     }
 
     #[test]

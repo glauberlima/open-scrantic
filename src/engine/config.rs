@@ -86,6 +86,8 @@ impl Config {
     fn parse(text: &str) -> Option<Self> {
         let mut cfg = Self::default();
         let mut in_section = false;
+        // Editors and `Set-Content -Encoding UTF8` may prepend a BOM, which would hide the section header.
+        let text = text.strip_prefix('\u{feff}').unwrap_or(text);
         for line in text.lines().map(str::trim).filter(|l| !l.is_empty()) {
             if line.starts_with('[') {
                 in_section = line.eq_ignore_ascii_case(SECTION);
@@ -194,6 +196,13 @@ mod tests {
         ] {
             assert!(Config::parse(&format!("{SECTION}\n{bad}\n")).is_none(), "{bad}");
         }
+    }
+
+    #[test]
+    fn a_utf8_bom_does_not_hide_the_section() {
+        let cfg = Config::parse(&format!("\u{feff}{SECTION}\nSounds=0\nNumDays=5\n")).unwrap();
+        assert!(!cfg.sounds);
+        assert_eq!(cfg.num_days, 5);
     }
 
     #[test]

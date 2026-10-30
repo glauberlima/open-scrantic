@@ -73,7 +73,7 @@ a mode of the regular one: everything of the other flavor is compiled out, so th
 code and the `.scr` has no command line besides what Windows passes.
 
 - `saver::start` reads `/s` (run), `/c` or no argument (settings dialog) and `/p HWND` (preview) and ignores anything
-  else, `/a` included. A run is always fullscreen; dedithering and soft audio follow the `Dedither` and `SoftAudio` INI keys (off by default).
+  else, `/a` included. A run is always fullscreen, on the primary monitor with a black cover window on each other monitor (`App::cover_other_monitors`); dedithering and soft audio follow the `Dedither` and `SoftAudio` INI keys (off by default).
 - `saver::InputGuard` ends a run on a key or button press, the wheel, losing the focus, or the cursor moving more than
   4 px from where it first appeared. Input is ignored for the first second, as Windows sends events of its own when
   it creates the window, and losing the focus counts only once the window has had it.
@@ -82,7 +82,8 @@ code and the `.scr` has no command line besides what Windows passes.
   part in the single-instance check (`windows_ui::already_running`, a `Local\` named mutex).
 - Where the picture goes is `Surface` in `main.rs`: `Window` and `Fullscreen` (chosen by `cli`, or `Fullscreen` always by
   `saver`) and `Embedded(hwnd)` for the preview, which draws into the pane Windows gives. Centering, the cursor,
-  the input guard, the sound and saving progress all follow from it.
+  the input guard, the sound and saving progress all follow from it. The cover windows (`App::covers`) only exist for
+  a screensaver `Fullscreen` run; they are painted black on `RedrawRequested` and their events go through the same guard.
 - The settings dialog lays out in 96-DPI units scaled by the DPI of the monitor it opens on (`windows_ui::scaled`,
   `monitor_dpi`), with the font Windows uses for its own dialogs at that DPI. The `/c` process sets per-monitor
   awareness itself, since it shows only the dialog; a run gets it from winit. The dialog is not rescaled if it is
