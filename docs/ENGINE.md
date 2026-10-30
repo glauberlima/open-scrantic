@@ -127,8 +127,19 @@ What it found, and what it ruled out:
   play it either.
 - **Opcodes the port ignores.** The scripts use `A601`, `4214`, `1101` and `1111`, which are no-ops in the
   original too (`seg12`, switch at `0x068f`; the draw switch at `0x015f`), and `1061` and `F05F`, which only
-  select the one palette (`JOHNCAST.PAL`). `1121` and `2012` store values in the script context; their
-  consumers were not traced.
+  select the one palette (`JOHNCAST.PAL`; every script passes index 0). `1121` stores its argument in
+  `scene[+0x16]` (`seg12:0853`), which only opcode `00C0` reads and no script uses. `2012` (always `0, 0`) calls an
+  empty function (`seg12:197c`) and sets `DS:46D8`, which the BMP loader copies to `DS:4108`; its only reader is the
+  bitmap routine at `seg9:0180`, which, with `DS:1E20` set (the free-memory check at `seg2:11b7..11e7` clears it
+  below about 3.2 MB), runs `seg9:054e` on the loaded bitmap. That routine rotates the pixel data by 180 degrees in
+  memory, probably a pre-mirrored copy for mirrored sprites; the consumer of that copy was not traced, and the port
+  mirrors sprites directly from the opcode's mirror bits.
+- **Dead timer.** The 16 ms tick callback (`seg2:16ce`) also decrements `DS:3F2E`, which nothing ever sets, so the
+  port's four timers (walk, idle pause, shore waves, whitecaps) are all that count.
+- **Moving clouds that never run.** `seg3:04a2` has code that spawns clouds at x = 640 and moves them, but only when
+  `DS:30BE > 100`. That value is computed in the step handler (`seg2:15d4`) from `DS:2E16`, which starts at 0 and has
+  no writer, so it stays 0 (static analysis; the original was not run). The clouds are therefore static, as in the
+  port, where they are baked into the background.
 - **Ruled out.** No key or mouse handling beyond the standard screensaver rules (any key, or a move of more than
   3 px, ends it; `seg1:0221`). Only `/c` and `/s` on the command line. The only dates read are the holidays and
   the calendar-day change. The string `Dynamix, JTP - Jeff Tunnell Productions` is the XOR key of the password
