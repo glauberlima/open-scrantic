@@ -148,23 +148,8 @@ fn configure(owner: Option<isize>) {
         return;
     }
     let mut cfg = Config::load();
-    let current = [
-        cfg.background,
-        cfg.clouds,
-        cfg.waves,
-        cfg.sounds,
-        cfg.dedither,
-        cfg.soft_audio,
-    ];
-    if let Some(new) = windows_ui::settings_dialog(current, owner) {
-        [
-            cfg.background,
-            cfg.clouds,
-            cfg.waves,
-            cfg.sounds,
-            cfg.dedither,
-            cfg.soft_audio,
-        ] = new;
+    if let Some(new) = windows_ui::settings_dialog(cfg.options(), owner) {
+        cfg.set_options(new);
         if let Err(e) = cfg.save() {
             windows_ui::error_box(&format!("Cannot save {}: {e}", Config::path().display()));
         }

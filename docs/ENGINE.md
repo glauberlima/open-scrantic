@@ -189,6 +189,7 @@ not "fix" them:
   the run. The original, written for one screen, had no such windows; monitors plugged in during a run are not
   covered. `--fullscreen` of the regular program still fills one monitor only.
 - Ellipses and lines use their own rasterization, which may differ by 1 px from GDI.
-- The configuration dialog and the screensaver password were not reimplemented (options can be
-  edited in the INI). Features this screensaver does not use (animated palettes, 256 colors, ADS
+- The configuration dialog exists only in the Windows `.scr` build (`windows_ui::settings_dialog`, `/c`); elsewhere
+  the options come from the INI or the command-line overrides. The screensaver password (`/a`) was not
+  reimplemented. Features this screensaver does not use (animated palettes, 256 colors, ADS
   variables) were not implemented.

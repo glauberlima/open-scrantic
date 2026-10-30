@@ -185,7 +185,7 @@ impl Canvas {
             for xx in x.max(clip.x1)..(x + w).min(clip.x2 + 1) {
                 let border = xx == x || yy == y || xx == x + w - 1 || yy == y + h - 1;
                 if border {
-                    self.put(xx, yy, if filled && w > 1 && h > 1 && fg == bg { bg } else { fg }, clip);
+                    self.put(xx, yy, fg, clip);
                 } else if filled {
                     self.put(xx, yy, bg, clip);
                 }

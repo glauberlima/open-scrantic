@@ -123,6 +123,29 @@ impl Config {
         Some(cfg)
     }
 
+    /// The six on/off options in the order of the settings dialog's checkboxes (`windows_ui::settings_dialog`).
+    pub fn options(&self) -> [bool; 6] {
+        [
+            self.background,
+            self.clouds,
+            self.waves,
+            self.sounds,
+            self.dedither,
+            self.soft_audio,
+        ]
+    }
+
+    pub fn set_options(&mut self, options: [bool; 6]) {
+        [
+            self.background,
+            self.clouds,
+            self.waves,
+            self.sounds,
+            self.dedither,
+            self.soft_audio,
+        ] = options;
+    }
+
     pub fn save(&self) -> std::io::Result<()> {
         let path = Self::path();
         let intro = if self.intro_saved != 0 {
@@ -177,6 +200,14 @@ mod tests {
         assert!(!cfg.dedither && !cfg.soft_audio);
         let cfg = Config::parse(&format!("{SECTION}\nDedither=1\nSoftAudio=1\n")).unwrap();
         assert!(cfg.dedither && cfg.soft_audio);
+    }
+
+    #[test]
+    fn options_follow_the_dialog_order_and_round_trip() {
+        let mut cfg = Config::default();
+        cfg.set_options([false, true, false, true, true, false]);
+        assert_eq!(cfg.options(), [false, true, false, true, true, false]);
+        assert!(!cfg.background && cfg.clouds && !cfg.waves && cfg.sounds && cfg.dedither && !cfg.soft_audio);
     }
 
     #[test]

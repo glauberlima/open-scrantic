@@ -356,21 +356,7 @@ impl ApplicationHandler for App {
             return;
         }
         let mut cfg = self.engine.config.clone();
-        (
-            cfg.background,
-            cfg.clouds,
-            cfg.waves,
-            cfg.sounds,
-            cfg.dedither,
-            cfg.soft_audio,
-        ) = (
-            self.saved.background,
-            self.saved.clouds,
-            self.saved.waves,
-            self.saved.sounds,
-            self.saved.dedither,
-            self.saved.soft_audio,
-        );
+        cfg.set_options(self.saved.options());
         if let Err(e) = cfg.save() {
             eprintln!("warning: cannot save settings: {e}");
         }
