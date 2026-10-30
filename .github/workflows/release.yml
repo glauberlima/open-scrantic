@@ -55,10 +55,14 @@ jobs:
     if: needs.plan.outputs.skipped != 'true'
     runs-on: macos-latest
     timeout-minutes: 30
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The release commit is made only after the builds, so the version is applied here too.
+      - run: bash scripts/set-version.sh "$TAG"
       - name: Install toolchain (from rust-toolchain.toml)
         run: |
           rustup toolchain install
@@ -84,16 +88,21 @@ jobs:
     if: needs.plan.outputs.skipped != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - run: bash scripts/set-version.sh "$TAG"
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo build --locked --release
+      - name: Check the binary carries the release version
+        run: test "$(target/release/open-scrantic --version)" = "open-scrantic ${TAG#v}"
       - run: cp target/release/open-scrantic open-scrantic-linux-x64
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -106,6 +115,8 @@ jobs:
     if: needs.plan.outputs.skipped != 'true'
     runs-on: windows-latest
     timeout-minutes: 30
+    env:
+      TAG: ${{ needs.plan.outputs.tag }}
     defaults:
       run:
         shell: bash
@@ -113,6 +124,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - run: bash scripts/set-version.sh "$TAG"
       - name: Install toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -180,10 +192,7 @@ jobs:
 
       - name: Update version and CHANGELOG
         run: |
-          case "$TAG" in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "Unexpected tag '$TAG'" >&2; exit 1 ;; esac
-          export VERSION="${TAG#v}"
-          sed -i "0,/^version = \".*\"/s//version = \"$VERSION\"/" Cargo.toml
-          perl -0pi -e 's/(name = "open-scrantic"\nversion = ")[^"]*/$1$ENV{VERSION}/' Cargo.lock
+          bash scripts/set-version.sh "$TAG"
           touch CHANGELOG.md
           git cliff --unreleased --tag "$TAG" --prepend CHANGELOG.md
           git diff --stat
