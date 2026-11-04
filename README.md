@@ -220,7 +220,7 @@ original settings dialog is not reimplemented; options live in [`SCRANTIC.INI`](
 
 Open Scrantic has also been mentioned elsewhere:
 
-- 2026-10-19 · Video · [Seu app favorito já tem cópia?](https://youtu.be/qq54tMuO7pY) by Ai Nico, at 4:15: brings the project back as the 1990s screensaver with a castaway on an island.
+- 2026-10-19 · Video · [Seu app favorito já tem cópia?](https://youtu.be/qq54tMuO7pY) by Ai Nico
 
 ## For developers
 
