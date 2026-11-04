@@ -20,7 +20,7 @@ screensaver. Watch Johnny go about his days on his tiny island while a story unf
 one day to the next, with the same behavior as the original.
 
 [Get started](#get-started) · [Windows screensaver](#install-as-a-windows-screensaver) ·
-[Settings](#settings) · [FAQ](#faq) · [Why](#why-this-exists) · [For developers](#for-developers) · [AI disclosure](#ai-disclosure) · [Legal](#legal-notice)
+[Settings](#settings) · [FAQ](#faq) · [Why](#why-this-exists) · [Mentions](#mentions) · [For developers](#for-developers) · [AI disclosure](#ai-disclosure) · [Legal](#legal-notice)
 
 > [!IMPORTANT]
 > You need your own copy of the original screensaver files. This project does not include them
@@ -215,6 +215,12 @@ number generator. Recovered formats, VM semantics, story rules, timing and the d
 (for example, full-frame redraw instead of dirty rectangles) are recorded in
 [`docs/ENGINE.md`](docs/ENGINE.md); the structure is drawn in [`docs/DIAGRAMS.md`](docs/DIAGRAMS.md). The
 original settings dialog is not reimplemented; options live in [`SCRANTIC.INI`](#settings).
+
+## Mentions
+
+Open Scrantic has also been mentioned elsewhere:
+
+- 2026-10-19 · Video · [Seu app favorito já tem cópia?](https://youtu.be/qq54tMuO7pY) by Ai Nico, at 4:15: brings the project back as the 1990s screensaver with a castaway on an island.
 
 ## For developers
 
