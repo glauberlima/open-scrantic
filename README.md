@@ -220,7 +220,54 @@ original settings dialog is not reimplemented; options live in [`SCRANTIC.INI`](
 
 Open Scrantic has also been mentioned elsewhere:
 
+### Articles and coverage
+
+- 2026-10-17 · News (in Czech) · [Open Scrantic: Johnny Castaway s pomocí AI](https://radyz.cz/rychle-zpravy/open-scrantic-ozivuje-johnnyho-castawaye-v-rustu-vznikal-s-claude-code-a-rea/) by Radyz
+- 2026-10-17 · Opinion (in Czech) · [Open Scrantic: AI vrací Johnnyho Castawaye](https://radyz.cz/nazory/open-scrantic-johnny-castaway-ai-zachrana-softwaru/) by Radyz
+- 2026-10-18 · Case study · [Open Scrantic: reconstructing the Johnny Castaway screensaver engine](https://awesomerea.org/resources/open-scrantic-screensaver-case/) by AwesomeREA.org
+- 2026-10-18 · Project card · [Johnny Castaway screensaver: reverse engineered with AI](https://reversedwithai.com/p/open-scrantic-johnny-castaway-rust-claude-code) by Reversed with AI
+- 2026-10-18 · Post on X · [@whyamas highlighting the Reversed with AI card](https://x.com/whyamas/status/2111784108414394597)
 - 2026-10-19 · Video · [Seu app favorito já tem cópia?](https://youtu.be/qq54tMuO7pY) by Ai Nico
+- 2026-10-30 · Post on X · [@whyamas sharing the Reversed with AI card again](https://x.com/whyamas/status/2116189662033465360)
+
+### Lists and catalogs
+
+- 2026-10-19 · Catalog · [Open Scrantic](https://madewithrea.com/builds/open-scrantic) on Made with REA
+- Catalog · [Open Scrantic: clean-room rebuild, download & source](https://recompsoftware.com/p/open-scrantic/) on Recomp
+- Catalog · [Open Scrantic: Screen Antics: Johnny Castaway (1992)](https://awesomerea.com/projects/open-scrantic/) on AwesomeREA.com
+- Catalog · [open-scrantic](https://www.nicheloom.com/launches/59456/) on Nicheloom
+- App profile · [Open Scrantic](https://www.vibeleaderboard.ai/app/53832021-63c8-4328-819b-9b6626f16a1a) on VibeLeaderboard
+- Catalog · [Screen Antics: Johnny Castaway (PC): reimplementation](https://unbaked.games/games/screen-antics-johnny-castaway/) on unbaked
+- Catalog · [Play Johnny Castaway on Modern Systems](https://linkloot.io/loot/play-johnny-castaway-on-modern-systems) on LinkLoot
+- Product page · [Open Scrantic](https://shipdeck.co/products/open-scrantic-97c661) on ShipDeck
+- Awesome list · [reacher-z/Awesome-REA](https://github.com/reacher-z/Awesome-REA)
+- Awesome list · [jammyfu/rea-atlas](https://github.com/jammyfu/rea-atlas)
+- Awesome list · [kaixinbaba/awesome-rea](https://github.com/kaixinbaba/awesome-rea)
+
+### Indexes, stats and reposts
+
+- Index · [Upstar](https://upstar.dev/r/glauberlima/open-scrantic) · repo activity
+- Index · [RepositoryStats](https://repositorystats.com/glauberlima/open-scrantic) · star and commit history
+- Index · [GitStock](https://gitstock.org/glauberlima/open-scrantic) · commit history chart
+- Index · [RepoRank](https://reporank.net/en/repo/glauberlima-open-scrantic.html) · project profile
+- Index · [Kaiyuanbang](https://kaiyuanbang.cn/zh-cn/repo/glauberlima-open-scrantic.html) · project profile (in Chinese)
+- Index · [LibHunt](https://www.libhunt.com/r/open-scrantic) · references the Show HN
+- 2026-10-17 · Bookmark · [johan.se](https://johan.se/post/261017-open-scrantic-johnny-castaway-in-rust-from-disassembly-via-rea)
+- 2026-10-17 · Repost · [Tsecurity.de](https://tsecurity.de/de/4279617/reverse-engineering/open-scrantic-johnny-castaway-1993-windows-31-screensaver-reimplemented-in-rust-from-its-disassembly-using-rea/) · mirrors the r/ReverseEngineering post
+- 2026-10-17 · Repost · [World Programming](https://www.worldprogramming.org/posts/open-scrantic-johnny-castaway-1993-windows-31-screensaver-reimplemented-in-rust-from-its-disassembly-using-rea-ewom56) · mirrors the r/ReverseEngineering post
+- 2026-10-17 · Repost · [Vuink](https://vuink.com/post/tvguho-d-dpbz/glauberlima/open-scrantic)
+- 2026-10-17 · Repost · [Rust News on Nostr](https://damus.io/nevent1qqspsxa2ln3vk0w3kv0cnxlxnrc4llasm7m7lda0c36glulqzwwpd6chrm5a3) · mirrors the r/rust post
+- Index · [Fetchlinks](https://fetchlinks.vercel.app/?author=glauberlima&source_type=reddit) · indexes the author's Reddit posts
+
+### Community discussions
+
+Comments by others, on the repo and on the author's announcement threads:
+
+- 2026-10-17 · Issue · [Dedithered rendering from dosbox-staging (#1)](https://github.com/glauberlima/open-scrantic/issues/1) by bsdice
+- 2026-10-17 · Comments · [r/ReverseEngineering thread](https://www.reddit.com/r/ReverseEngineering/comments/1x8bpym/open_scrantic_johnny_castaway_1993_windows_31/)
+- 2026-10-17 · Comments · [r/rust thread](https://www.reddit.com/r/rust/comments/1x8botd/open_scrantic_johnny_castaway_1993_windows_31/) (post removed by moderators; comments still visible)
+- 2026-10-18 · Comments · [r/decomps thread](https://www.reddit.com/r/decomps/comments/1x8ra73/open_scrantic_johnny_castaway_1992_windows_31/)
+- 2026-11-02 · Comments · [r/retrocomputing thread](https://www.reddit.com/r/retrocomputing/comments/1xlyowk/open_scrantic_johnny_castaway_screensaver/)
 
 ## For developers
 
