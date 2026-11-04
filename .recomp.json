@@ -1,0 +1,16 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Screen Antics: Johnny Castaway",
+  "system": "PC (Windows)",
+  "type": "port",
+  "project": "Open Scrantic",
+  "status": "released",
+  "targets": ["Windows", "macOS", "Linux"],
+  "approach": "Engine rewritten in Rust from the original game's file formats and disassembled behavior; reads the original screensaver files at runtime.",
+  "notes": "Runs the original Johnny Castaway screensaver natively on Windows, macOS and Linux, with the same behavior as the 1992 Windows 3.1 original. Requires the user's own copy of the original files.",
+  "links": [
+    { "label": "Source", "url": "https://github.com/glauberlima/open-scrantic" },
+    { "label": "Latest release", "url": "https://github.com/glauberlima/open-scrantic/releases/latest" }
+  ],
+  "tags": ["screensaver", "engine", "reimplementation"]
+}
