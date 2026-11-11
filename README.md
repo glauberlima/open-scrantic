@@ -134,7 +134,8 @@ On Windows, use `certutil -hashfile <file> SHA256`.
 
 Options and story progress are stored in `SCRANTIC.INI`, in the folder of the original files (next to the program; for the Windows
 screensaver, see [its details](#install-as-a-windows-screensaver)). It is created on the
-first run and rewritten when you exit normally, so edit it only while the program is closed. Keys are
+first run and rewritten whenever the story progresses and on exit, so a crash or a forced close loses nothing;
+edit it only while the program is closed. Keys are
 case-insensitive.
 
 **Options** (`0` = off, `1` = on; default `1`):

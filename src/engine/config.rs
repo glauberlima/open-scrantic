@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 const SECTION: &str = "[ScreenSaver.ScreenAntics]";
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Config {
     pub background: bool,
     pub clouds: bool,

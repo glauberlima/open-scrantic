@@ -63,7 +63,7 @@ struct App {
     #[cfg(feature = "screensaver")]
     input: Option<saver::InputGuard>,
     dedither: bool,
-    /// Settings as they are in the INI, which a run with overrides must write back unchanged.
+    /// Settings as last written to the INI, which a run with overrides must write back unchanged.
     saved: Config,
     /// F12 was pressed; the next redraw saves the frame it draws.
     screenshot: bool,
@@ -97,7 +97,30 @@ impl App {
             }
             stepped = true;
         }
+        if stepped {
+            self.persist();
+        }
         stepped
+    }
+
+    /// Writes the INI as soon as the story progress differs from it, so a crash, a kill or a logoff loses
+    /// nothing. The six options are taken from `saved`, so an override never reaches the file.
+    fn persist(&mut self) {
+        // A preview must not move the story on: only real runs save their progress.
+        #[cfg(feature = "screensaver")]
+        if matches!(self.target, Surface::Embedded(_)) {
+            return;
+        }
+        let mut cfg = self.engine.config.clone();
+        cfg.set_options(self.saved.options());
+        if cfg == self.saved {
+            return;
+        }
+        if let Err(e) = cfg.save() {
+            eprintln!("warning: cannot save settings: {e}");
+        }
+        // Also on failure, so a broken file system warns once per change instead of every step.
+        self.saved = cfg;
     }
 
     /// Writes the current frame next to the executable: `-raw` is the 640x480 palette picture as the
@@ -350,16 +373,7 @@ impl ApplicationHandler for App {
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        // A preview must not move the story on: only real runs save their progress.
-        #[cfg(feature = "screensaver")]
-        if matches!(self.target, Surface::Embedded(_)) {
-            return;
-        }
-        let mut cfg = self.engine.config.clone();
-        cfg.set_options(self.saved.options());
-        if let Err(e) = cfg.save() {
-            eprintln!("warning: cannot save settings: {e}");
-        }
+        self.persist();
     }
 }
 

@@ -109,7 +109,7 @@ flowchart TD
     RD3 --> W
 
     EV -->|"Esc or CloseRequested"| EXIT["event_loop.exit()"]
-    EXIT --> SAVE["exiting(): write SCRANTIC.INI"]
+    EXIT --> SAVE["exiting(): persist() writes SCRANTIC.INI if changed"]
     EV -->|"F12"| SHOT["screenshot = true, request_redraw<br/>redraw saves -raw and -view PNGs"]
     SHOT --> W
 ```
@@ -356,10 +356,10 @@ flowchart TD
     CP --> ENG["Engine::new(config)<br/>the run uses the overridden values"]
 
     ENG --> RUN(["run: story progress changes<br/>NumDays, Introduction, date, StartTime"])
-    RUN --> EXIT["exiting() on a clean exit"]
+    RUN --> EXIT["persist() after a step that changed it,<br/>and on exit"]
     EXIT --> W["engine config + the six options<br/>taken back from saved"]
     SV --> W
     W --> FILE[("SCRANTIC.INI")]
 ```
 
-An override therefore never reaches the file, while story progress does. A crash or a kill writes nothing.
+An override therefore never reaches the file, while story progress does, as soon as it changes: a crash or a kill loses nothing.

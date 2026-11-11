@@ -59,7 +59,7 @@ Three layers, with dependencies pointing downward only:
 | `engine/config.rs`     | `SCRANTIC.INI` read/write with the original keys                                                | —              |
 | `present.rs`           | Frame to window pixels: palette lookup, optional dedithering, scaling (pure functions)          | —              |
 | `audio.rs`             | One-channel sound playback with `sndPlaySound(SND_ASYNC)` semantics (rodio); optional soft mode | —              |
-| `main.rs`              | Window (winit), presenting (softbuffer), clocks, input (Esc, F12), saving settings on exit      | —              |
+| `main.rs`              | Window (winit), presenting (softbuffer), clocks, input (Esc, F12), saving settings on change    | —              |
 | `cli.rs`               | Command line of the regular program: `--fullscreen`, `--dedither`, `--soft-audio`, INI overrides | —              |
 | `saver.rs`             | Windows screensaver build only: the Windows switches (`/s`, `/c`, `/p`), input guard, fixed options | —           |
 | `windows_ui.rs`        | Windows screensaver build only: settings dialog, single-instance mutex, preview window, error box | —              |
@@ -258,7 +258,8 @@ endless mono `Stream` feeds the mixer, and `Audio::play` fades the sound it cuts
 `Config` maps `[ScreenSaver.ScreenAntics]` in `SCRANTIC.INI` to fields: six options
 (`Background`, `Clouds`, `Waves`, `Sounds`, plus `Dedither` and `SoftAudio`, which are not in the original) and the story state (`NumDays`, `Introduction`, the date
 of the last run, `StartTime`). Parsing is strict: any invalid value replaces the whole file with the
-defaults. The file is written once, on clean exit (`ApplicationHandler::exiting`). The command-line options
+defaults. The file is written after any step that changed the story state and again on exit (`App::persist`), so a
+crash, a kill or a logoff loses nothing. The command-line options
 `--background`, `--clouds`, `--waves` and `--sounds` (`0`/`1`) override four of the six options for one run:
 `main.rs` keeps the settings as loaded (`App::saved`) and writes those six back, so an override is never
 persisted.
