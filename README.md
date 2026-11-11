@@ -95,8 +95,9 @@ That is all. To try it first without installing, right-click the `.scr` and choo
   administrator's profile; copy the three files to your own `%APPDATA%\OpenScrantic` instead.
 - When Windows starts it (`/s`) it runs fullscreen on the primary monitor (any other monitor goes black) and
   exits on any key, click or mouse movement. **Settings** (`/c`) opens a small dialog with the Background,
-  Clouds, Waves, Sounds, Dedither and Soft audio checkboxes (the last two are off by default), saved to `SCRANTIC.INI`, and a link to report bugs or suggest features, and **Preview** (`/p`) draws the island,
-  silent, in the monitor picture of the Screen Saver Settings window.
+  Clouds, Waves, Sounds, Dedither and Soft audio checkboxes (the last two are off by default), saved to
+  `SCRANTIC.INI`, plus the version and a link to report bugs or suggest features. **Preview** (`/p`) draws the
+  island, silent, in the monitor picture of the Screen Saver Settings window.
 - This build takes only the switches Windows passes (`/s`, `/c`, `/p`, `/a`) and none of the options of the
   regular program. On macOS and Linux there is no screensaver build.
 - To remove it, delete `%SystemRoot%\System32\OpenScrantic.scr` (as administrator) and the

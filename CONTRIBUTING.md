@@ -58,6 +58,6 @@ window. See `AGENTS.md` for details.
 
 ## Reporting a bug
 
-Open an issue with the form. It asks for `open-scrantic --version` (for the Windows `.scr`, the version on the Details tab of its properties), your operating system, the flags you
+Open an issue with the form. It asks for `open-scrantic --version` (for the Windows `.scr`, the version at the bottom of its Settings dialog, which also links to the issue tracker), your operating system, the flags you
 used, and, for a story or scene problem, the output of `OPEN_SCRANTIC_DEBUG=1 target/release/open-scrantic`.
 Report security problems privately, as described in [`SECURITY.md`](SECURITY.md).

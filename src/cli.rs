@@ -6,7 +6,13 @@ use open_scrantic::{assets, audio};
 
 use crate::Surface;
 
-const USAGE: &str = "\
+const USAGE: &str = concat!(
+    "\
+open-scrantic ",
+    env!("CARGO_PKG_VERSION"),
+    "
+Report bugs or suggest features: https://github.com/glauberlima/open-scrantic/issues
+
 Usage: open-scrantic [--fullscreen] [--dedither] [--soft-audio] [--background=0|1] [--clouds=0|1]
                      [--waves=0|1] [--sounds=0|1]
 
@@ -14,15 +20,17 @@ Options:
   --fullscreen    start fullscreen instead of in a window
   --dedither      blend the 1992 checkerboard dithering into solid colors
   --soft-audio    improve the sounds: resample to the device rate, hide the 8-bit hiss, fade cuts
-  --background=N  override Background of SCRANTIC.INI for this run (0 = off, 1 = on)
-  --clouds=N      override Clouds of SCRANTIC.INI for this run
-  --waves=N       override Waves of SCRANTIC.INI for this run
-  --sounds=N      override Sounds of SCRANTIC.INI for this run
+  --background=N  island and ocean background (0 = off, 1 = on)
+  --clouds=N      clouds in the sky (0 = off, 1 = on)
+  --waves=N       ocean whitecaps (0 = off, 1 = on)
+  --sounds=N      sound effects (0 = muted, 1 = on)
+                  The four --name=N options override SCRANTIC.INI for this run only; nothing is saved.
   -V, --version   print the version and exit
   -h, --help      print this help and exit
 
 The original screensaver files (SCRANTIC.SCR, RESOURCE.MAP, RESOURCE.001) and SCRANTIC.INI are read
-from the directory of this executable. Esc exits; F12 saves a screenshot there.";
+from the directory of this executable. Esc exits; F12 saves a screenshot there."
+);
 
 /// Overrides of the INI options for this run; they are never written back to the file.
 #[derive(Default)]
