@@ -11,7 +11,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: Output of `open-scrantic --version`, or the release you downloaded. The Windows screensaver (.scr) has no command line: use the version on the Details tab of the file's properties.
+      description: Output of `open-scrantic --version`, or the release you downloaded. The Windows screensaver (.scr) shows it at the bottom of its Settings dialog.
       placeholder: open-scrantic x.y.z
     validations:
       required: true
@@ -35,7 +35,7 @@ body:
     id: flags
     attributes:
       label: Flags and settings used
-      description: Command-line flags, and any non-default values in `SCRANTIC.INI`.
+      description: Command-line flags, and any non-default values in `SCRANTIC.INI`. The Windows screensaver (.scr) has no flags; list the checkboxes you changed in its Settings dialog.
       placeholder: --fullscreen --soft-audio, Waves=0
   - type: dropdown
     id: area
@@ -71,4 +71,5 @@ body:
       description: |
         For a story or scene problem, paste the output of `OPEN_SCRANTIC_DEBUG=1 open-scrantic`. It prints each
         session's plan and the scenes that finished. Error lines starting with `warning:` or `error:` help too.
+        The Windows screensaver (.scr) has no console: run `open-scrantic.exe` from a terminal to get this output.
       render: text

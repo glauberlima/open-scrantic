@@ -10,26 +10,32 @@ use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::raw_window_handle::{RawWindowHandle, Win32WindowHandle};
 use winit::window::{Window, WindowAttributes};
 
-use windows_sys::Win32::Foundation::{ERROR_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
+use windows_sys::Win32::Foundation::{
+    ERROR_ALREADY_EXISTS, GetLastError, HWND, LPARAM, LRESULT, POINT, RECT, SIZE, WPARAM,
+};
 use windows_sys::Win32::Graphics::Gdi::{
     COLOR_BTNFACE, CreateFontIndirectW, DEFAULT_GUI_FONT, DeleteObject, GetStockObject, HBRUSH, HGDIOBJ,
     MONITOR_DEFAULTTONEAREST, MONITOR_DEFAULTTOPRIMARY, MonitorFromPoint, MonitorFromWindow, UpdateWindow,
 };
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::System::Threading::CreateMutexW;
+use windows_sys::Win32::UI::Controls::{
+    ICC_LINK_CLASS, INITCOMMONCONTROLSEX, InitCommonControlsEx, LM_GETIDEALSIZE, NM_CLICK, NM_RETURN, NMHDR,
+};
 use windows_sys::Win32::UI::HiDpi::{
     AdjustWindowRectExForDpi, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, GetDpiForMonitor, MDT_EFFECTIVE_DPI,
     SetProcessDpiAwarenessContext, SystemParametersInfoForDpi,
 };
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{EnableWindow, SetFocus};
+use windows_sys::Win32::UI::Shell::ShellExecuteW;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     BM_GETCHECK, BM_SETCHECK, BS_AUTOCHECKBOX, BS_DEFPUSHBUTTON, BS_PUSHBUTTON, CreateWindowExW, DefWindowProcW,
     DestroyWindow, DispatchMessageW, GetClientRect, GetDlgItem, GetMessageW, GetSystemMetrics, GetWindowRect,
     IDC_ARROW, IDCANCEL, IDOK, IsDialogMessageW, IsWindow, LoadCursorW, MB_ICONERROR, MB_OK, MB_SETFOREGROUND, MSG,
-    MessageBoxW, NONCLIENTMETRICSW, PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN, SPI_GETNONCLIENTMETRICS,
-    SW_SHOW, SendMessageW, SetForegroundWindow, ShowWindow, TranslateMessage, UnregisterClassW, WM_CLOSE, WM_COMMAND,
-    WM_DESTROY, WM_SETFONT, WNDCLASSW, WS_CAPTION, WS_CHILD, WS_EX_DLGMODALFRAME, WS_POPUP, WS_SYSMENU, WS_TABSTOP,
-    WS_VISIBLE,
+    MessageBoxW, MoveWindow, NONCLIENTMETRICSW, PostQuitMessage, RegisterClassW, SM_CXSCREEN, SM_CYSCREEN,
+    SPI_GETNONCLIENTMETRICS, SW_SHOW, SendMessageW, SetForegroundWindow, ShowWindow, TranslateMessage,
+    UnregisterClassW, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_NOTIFY, WM_SETFONT, WNDCLASSW, WS_CAPTION, WS_CHILD,
+    WS_EX_DLGMODALFRAME, WS_POPUP, WS_SYSMENU, WS_TABSTOP, WS_VISIBLE,
 };
 
 const TITLE: &str = "Open Scrantic";
@@ -42,9 +48,14 @@ const ACCEPTED: u32 = 1 << 8;
 const CHECKED: usize = 1;
 
 const CLIENT_W: i32 = 280;
-const CLIENT_H: i32 = 236;
+const CLIENT_H: i32 = 268;
 /// `SS_CENTER`: static text centered in its box.
 const SS_CENTER: u32 = 1;
+/// `SS_ETCHEDHORZ`: a thin horizontal line.
+const SS_ETCHEDHORZ: u32 = 0x10;
+const ISSUES_URL: &str = "https://github.com/glauberlima/open-scrantic/issues";
+/// Control id of the "report a bug" link.
+const LINK_ID: i32 = 120;
 const CHECKBOX_W: i32 = 110;
 const BUTTON_W: i32 = 76;
 const BUTTON_GAP: i32 = 12;
@@ -150,6 +161,21 @@ unsafe extern "system" fn wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam:
                         DestroyWindow(hwnd);
                     }
                     _ => {}
+                }
+                0
+            }
+            WM_NOTIFY => {
+                // SAFETY: for WM_NOTIFY `lparam` points to the NMHDR of the notification.
+                let nm = &*(lparam as *const NMHDR);
+                if nm.idFrom == LINK_ID as usize && (nm.code == NM_CLICK || nm.code == NM_RETURN) {
+                    ShellExecuteW(
+                        null_mut(),
+                        wide("open").as_ptr(),
+                        wide(ISSUES_URL).as_ptr(),
+                        null(),
+                        null(),
+                        SW_SHOW,
+                    );
                 }
                 0
             }
@@ -288,6 +314,47 @@ pub fn settings_dialog(initial: [bool; 6], owner: Option<isize>) -> Option<[bool
             IDCANCEL,
             font,
         );
+
+        // Footer: the version and a link to the issue tracker, centered under a thin line. SysLink has no
+        // centering style, so the control is sized to its text and placed by hand.
+        child(
+            hwnd,
+            "STATIC",
+            "",
+            SS_ETCHEDHORZ,
+            [margin, px(232), cw - 2 * margin, px(2)],
+            -1,
+            font,
+        );
+        InitCommonControlsEx(&INITCOMMONCONTROLSEX {
+            dwSize: std::mem::size_of::<INITCOMMONCONTROLSEX>() as u32,
+            dwICC: ICC_LINK_CLASS,
+        });
+        let text = format!(
+            "v{}  \u{b7}  <a>Report a bug or suggest a feature</a>",
+            env!("CARGO_PKG_VERSION")
+        );
+        let link = child(
+            hwnd,
+            "SysLink",
+            &text,
+            WS_TABSTOP,
+            [0, px(242), cw, px(18)],
+            LINK_ID,
+            font,
+        );
+        let mut size = SIZE { cx: 0, cy: 0 };
+        SendMessageW(link, LM_GETIDEALSIZE, cw as usize, (&raw mut size) as LPARAM);
+        if size.cx > 0 {
+            MoveWindow(
+                link,
+                (cw - size.cx.min(cw)) / 2,
+                px(242),
+                size.cx.min(cw),
+                size.cy.max(px(18)),
+                1,
+            );
+        }
 
         if !owner.is_null() {
             EnableWindow(owner, 0);
