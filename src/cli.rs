@@ -6,13 +6,11 @@ use open_scrantic::{assets, audio};
 
 use crate::Surface;
 
-const USAGE: &str = concat!(
-    "\
-open-scrantic ",
-    env!("CARGO_PKG_VERSION"),
-    "
-Report bugs or suggest features: https://github.com/glauberlima/open-scrantic/issues
+const VERSION: &str = concat!("open-scrantic ", env!("CARGO_PKG_VERSION"));
+const ISSUES_URL: &str = concat!(env!("CARGO_PKG_REPOSITORY"), "/issues");
 
+/// Also appended to argument errors, so it carries no version or bug-report header (only `--help` does).
+const USAGE: &str = "\
 Usage: open-scrantic [--fullscreen] [--dedither] [--soft-audio] [--background=0|1] [--clouds=0|1]
                      [--waves=0|1] [--sounds=0|1]
 
@@ -29,8 +27,7 @@ Options:
   -h, --help      print this help and exit
 
 The original screensaver files (SCRANTIC.SCR, RESOURCE.MAP, RESOURCE.001) and SCRANTIC.INI are read
-from the directory of this executable. Esc exits; F12 saves a screenshot there."
-);
+from the directory of this executable. Esc exits; F12 saves a screenshot there.";
 
 /// Overrides of the INI options for this run; they are never written back to the file.
 #[derive(Default)]
@@ -117,11 +114,11 @@ pub fn parse_args() -> Result<Option<Options>, String> {
             "--dedither" => o.dedither = true,
             "--soft-audio" => o.soft_audio = true,
             "-V" | "--version" => {
-                println!("open-scrantic {}", env!("CARGO_PKG_VERSION"));
+                println!("{VERSION}");
                 return Ok(None);
             }
             "-h" | "--help" => {
-                println!("{USAGE}");
+                println!("{VERSION}\nReport bugs or suggest features: {ISSUES_URL}\n\n{USAGE}");
                 return Ok(None);
             }
             _ => match a.split_once('=') {

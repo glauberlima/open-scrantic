@@ -53,7 +53,7 @@ const CLIENT_H: i32 = 268;
 const SS_CENTER: u32 = 1;
 /// `SS_ETCHEDHORZ`: a thin horizontal line.
 const SS_ETCHEDHORZ: u32 = 0x10;
-const ISSUES_URL: &str = "https://github.com/glauberlima/open-scrantic/issues";
+const ISSUES_URL: &str = concat!(env!("CARGO_PKG_REPOSITORY"), "/issues");
 /// Control id of the "report a bug" link.
 const LINK_ID: i32 = 120;
 const CHECKBOX_W: i32 = 110;
