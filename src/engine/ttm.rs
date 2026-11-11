@@ -226,9 +226,10 @@ pub fn run_frame(ctx: &mut TtmCtx, scene: &mut Scene, env: &mut Env<'_>) -> Opti
                 if skip || w <= 0 || h <= 0 || a[0] + w > WIDTH || a[1] + h > HEIGHT {
                     continue;
                 }
+                // seg12:1747 saves from and seg12:1801 restores into the same buffer (DS:1EB2): `work`.
                 if op.code == 0xA054 {
                     let zone = Clip::rect(a[0], a[1], w, h);
-                    ctx.saved_zone = Some((zone, env.bg.save_rect(zone)));
+                    ctx.saved_zone = Some((zone, env.work.save_rect(zone)));
                 } else if let Some((zone, saved)) = &ctx.saved_zone {
                     env.work.restore_rect(*zone, saved);
                 }

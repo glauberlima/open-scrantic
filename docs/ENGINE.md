@@ -151,8 +151,8 @@ These look like bugs but match the disassembly (checked against `seg3`, `seg4` a
 not "fix" them:
 
 - **Save/restore zone (`0xA054`/`0xA064`)**: both are skipped when a frame only redraws (the
-  first-run flag at scene record `+0x0E`). The save reads the background buffer and the restore
-  writes the work buffer.
+  first-run flag at scene record `+0x0E`). Both use the work buffer (`DS:1EB2`): the save
+  (`seg12:1747`) reads it and the restore (`seg12:1801`) writes it.
 - **A chapter scene can be dropped from its session**: the opening scene of a non-final chapter
   joins the plan only on a 5% roll per pick (50% for scenes with flag 1). If the budget runs out
   first, it is never played, yet the chapter still advances (`seg4:08b9`, `0ba5`).
