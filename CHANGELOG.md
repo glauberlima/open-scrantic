@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.6.0 — 2026-11-12
+
+### Bug Fixes
+
+- Apply the release version before building ([1569d03](https://github.com/glauberlima/open-scrantic/commit/1569d03b7caae8e10c6f45e8552d5d867f0e4a7b))
+- Cover other monitors, retry audio, read BOM INI, blend whole dither runs ([15cd324](https://github.com/glauberlima/open-scrantic/commit/15cd3241a4ea920b340ca7a7f6f4b4df513bcd3a))
+- Save SCRANTIC.INI whenever the story progresses ([839f32c](https://github.com/glauberlima/open-scrantic/commit/839f32c62054b68652b5848238f3aa4ff26b5ad8))
+- Save the 0xA054 zone from the work buffer like the original ([180d947](https://github.com/glauberlima/open-scrantic/commit/180d9473090488cb16c1f226de1f609f6fab96df))
+- Keep the version and issues header out of argument errors ([085c23a](https://github.com/glauberlima/open-scrantic/commit/085c23a036462f4feb3b8657e744481fe61f6da4))
+
+
+### Documentation
+
+- Use Windows env vars for System32 paths and add coffee to footer (#6) ([274ad3e](https://github.com/glauberlima/open-scrantic/commit/274ad3e8bfd3fbc054fd0b32f78f08420f326dcf))
+- Record what the unused opcodes and timers do in the original ([d90f169](https://github.com/glauberlima/open-scrantic/commit/d90f1692927e7955e7c0745d3770af58e8d1f3e2))
+- Add .recomp.json so the project is listed on recomp.fyi (#8) ([31e94ce](https://github.com/glauberlima/open-scrantic/commit/31e94ce7e4cc1891321b42eafda5c479e93942e2))
+- Add a Mentions section for coverage elsewhere (#9) ([1e3f01a](https://github.com/glauberlima/open-scrantic/commit/1e3f01a570a1254348f8381b19d30a801308e758))
+
+
+### Features
+
+- Link to the issue tracker in the settings dialog ([0cc429e](https://github.com/glauberlima/open-scrantic/commit/0cc429e2b01029669edc7beab40037635dbc6f58))
+- Show version, issues link and option details in --help ([a47e9d2](https://github.com/glauberlima/open-scrantic/commit/a47e9d2780fc60bfda37a23c97e3a35c8a056e9e))
+
+
+### Refactoring
+
+- Drop a redundant rect color and share the option list ([7836518](https://github.com/glauberlima/open-scrantic/commit/7836518a803e2f38af35beb60269ee953a1a9ecc))
+- Share the clock and frame-conversion helpers, drop dead state ([6df075f](https://github.com/glauberlima/open-scrantic/commit/6df075f6c18e5e81d1988bf7eb8fc2e1aa4b5560))
+
 ## v0.5.0 — 2026-10-29
 
 ### Bug Fixes
