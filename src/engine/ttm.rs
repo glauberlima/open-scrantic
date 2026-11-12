@@ -176,20 +176,19 @@ pub fn run_frame(ctx: &mut TtmCtx, scene: &mut Scene, env: &mut Env<'_>) -> Opti
     for op in ops {
         let mut a = [op.arg(0), op.arg(1), op.arg(2), op.arg(3), op.arg(4), op.arg(5)];
         // Island offset (globals 0x46E6/0x46E4) for drawing, clip and copy-zone opcodes.
-        if (0xA000..=0xAFFF).contains(&op.code) || op.code == 0x4004 || op.code == 0x4204 {
-            match op.code {
-                0x4004 | 0xA0A4 => {
-                    a[0] += ox;
-                    a[1] += oy;
-                    a[2] += ox;
-                    a[3] += oy;
-                }
-                0xA601 | 0xAF1F | 0xAF2F => {}
-                _ => {
-                    a[0] += ox;
-                    a[1] += oy;
-                }
+        match op.code {
+            0x4004 | 0xA0A4 => {
+                a[0] += ox;
+                a[1] += oy;
+                a[2] += ox;
+                a[3] += oy;
             }
+            0xA601 | 0xAF1F | 0xAF2F => {}
+            0xA000..=0xAFFF | 0x4204 => {
+                a[0] += ox;
+                a[1] += oy;
+            }
+            _ => {}
         }
         let clip = clip_of(scene);
         match op.code {

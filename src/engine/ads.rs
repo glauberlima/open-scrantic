@@ -503,8 +503,8 @@ impl AdsRuntime {
         start
     }
 
-    /// seg10:1acb – one scheduler tick. Returns true if any scene ran a frame.
-    pub fn update(&mut self, env: &mut Env<'_>) -> bool {
+    /// seg10:1acb – one scheduler tick.
+    pub fn update(&mut self, env: &mut Env<'_>) {
         self.now = env.now;
 
         // Propagate tag states to their scenes; restarted tags reset their scenes.
@@ -544,7 +544,6 @@ impl AdsRuntime {
         }
 
         // Execute (draw) the current frame of every running scene, in list order.
-        let mut ran = false;
         let now = self.now;
         for k in 0..self.order.len() {
             let i = self.order[k];
@@ -565,7 +564,6 @@ impl AdsRuntime {
                     Some(_) if tag_state == 5 => {}
                     Some(res) => {
                         scene.redraw = true;
-                        ran = true;
                         if let Some(d) = res.delay
                             && d != scene.delay
                         {
@@ -606,7 +604,6 @@ impl AdsRuntime {
                 self.scenes[i].state = state::DONE;
             }
         }
-        ran
     }
 }
 

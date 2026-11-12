@@ -20,7 +20,7 @@ use crate::assets::{AssetError, Result, ScreensaverData};
 use ads::AdsRuntime;
 use config::Config;
 use gfx::Canvas;
-use island::{Island, Options};
+use island::Island;
 use rng::Rng;
 use walk::Walk;
 
@@ -102,7 +102,6 @@ pub struct Engine {
     story_scene: Option<usize>,
     forced_scene: Option<usize>,
     story_state: i32,
-    new_session: bool,
     debug: bool,
     sounds: Vec<u32>,
     /// Number of plan entries completed so far (diagnostics).
@@ -150,7 +149,6 @@ impl Engine {
             last_first: None,
             story_scene: None,
             story_state: 0,
-            new_session: false,
             debug: std::env::var_os("OPEN_SCRANTIC_DEBUG").is_some(),
             forced_scene: None,
             sounds: Vec::new(),
@@ -169,6 +167,16 @@ impl Engine {
 
     pub fn sound_bank(&self) -> &std::collections::HashMap<u32, Vec<f32>> {
         &self.data.exe.sounds
+    }
+
+    /// Runs step number `step` (counted from 1) on the emulated clocks: first the 16 ms ticks that are
+    /// due by `step * STEP_MS`, counted in `ticks`, then the step itself.
+    pub fn advance(&mut self, ticks: &mut u64, step: u64, clock: &Clock) {
+        while (*ticks + 1) * TICK_MS <= step * STEP_MS {
+            *ticks += 1;
+            self.tick();
+        }
+        self.step(clock);
     }
 
     /// The 16 ms timer callback (seg2:16ce).
@@ -200,12 +208,11 @@ impl Engine {
             (c.year, c.month, c.day) = (clock.year, clock.month, clock.day);
             c.intro_saved = 0;
         }
-        if self.new_session && self.story_state != 0 && c.intro <= c.num_days {
+        if self.story_state != 0 && c.intro <= c.num_days {
             c.intro += 1;
             c.intro_saved = c.intro;
         }
         self.story_state = 0;
-        self.new_session = false;
     }
 
     /// seg4:0d76 – weighted random scene matching `mask`, the day phase and the time budget.
@@ -423,18 +430,8 @@ impl Engine {
         self.walk.spot = first.spot_start as i32;
         self.walk.hdg = first.hdg_start as i32;
         self.plan_idx = 0;
-        let opts = Options {
-            background: self.config.background,
-            clouds: self.config.clouds,
-            waves: self.config.waves,
-        };
-        self.island.init(
-            &self.data.archive,
-            &mut self.bg,
-            &mut self.rng,
-            &opts,
-            self.config.num_days,
-        );
+        self.island
+            .init(&self.data.archive, &mut self.bg, &mut self.rng, &self.config);
         self.offset = self.island.ttm_offset(false);
         if self.debug {
             let names: Vec<String> = self.plan.iter().map(|&i| self.scene_name(i)).collect();
@@ -487,7 +484,6 @@ impl Engine {
     /// One story/scheduler step (seg4:06bf), composing a new frame.
     pub fn step(&mut self, clock: &Clock) {
         if self.plan_idx >= self.plan.len() {
-            self.new_session = true;
             self.new_session(clock);
         }
         self.work.px.copy_from_slice(&self.bg.px);
@@ -591,21 +587,7 @@ mod tests {
     fn headless_run_completes_scenes() {
         let Some(data) = screensaver_data() else { return };
         let mut engine = Engine::new(data, Config::default(), 4242).unwrap();
-        let clock = Clock {
-            year: 1993,
-            month: 6,
-            day: 1,
-            hour: 10,
-            minute: 0,
-        };
-        let mut ticks = 0u64;
-        for step in 1..=6000u64 {
-            while (ticks + 1) * TICK_MS <= step * STEP_MS {
-                ticks += 1;
-                engine.tick();
-            }
-            engine.step(&clock);
-        }
+        run_steps(&mut engine, 6000);
         assert!(engine.scenes_done >= 3, "only {} scenes completed", engine.scenes_done);
     }
 
@@ -630,11 +612,7 @@ mod tests {
         };
         let mut ticks = 0u64;
         for step in 1..=steps {
-            while (ticks + 1) * TICK_MS <= step * STEP_MS {
-                ticks += 1;
-                engine.tick();
-            }
-            engine.step(&clock);
+            engine.advance(&mut ticks, step, &clock);
         }
     }
 

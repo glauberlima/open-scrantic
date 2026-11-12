@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use super::{AssetError, Result, bytes, u16_at};
+use super::{AssetError, Result, bytes, u16_at, u32_at};
 
 /// One entry of the scene catalog (DS:0x1756, 17 bytes per record).
 #[derive(Clone, Copy, Debug)]
@@ -98,7 +98,7 @@ impl ExeData {
                 min_phase: r[8],
                 max_phase: r[9],
                 day: r[10],
-                flags: u32::from_le_bytes([r[11], r[12], r[13], r[14]]),
+                flags: u32_at(r, 11)?,
                 ads_id: r[15],
                 ads_tag: r[16],
             });
@@ -281,7 +281,7 @@ fn decode_wav(wav: &[u8]) -> Result<Vec<f32>> {
     }
     let mut p = 12;
     while p + 8 <= wav.len() {
-        let size = u32::from_le_bytes([wav[p + 4], wav[p + 5], wav[p + 6], wav[p + 7]]) as usize;
+        let size = u32_at(wav, p + 4)? as usize;
         if &wav[p..p + 4] == b"data" {
             let end = (p + 8 + size).min(wav.len());
             return Ok(wav[p + 8..end].iter().map(|&s| (s as f32 - 128.0) / 128.0).collect());

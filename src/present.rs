@@ -15,6 +15,15 @@ pub fn plain(px: &[u8], pal: &[[u8; 3]; 256]) -> Vec<u32> {
     px.iter().map(|&i| pack(pal[i as usize])).collect()
 }
 
+/// RGB frame as the window shows it: [`dedither`]ed or [`plain`].
+pub fn rgb(px: &[u8], pal: &[[u8; 3]; 256], dedither: bool) -> Vec<u32> {
+    if dedither {
+        self::dedither(px, pal)
+    } else {
+        plain(px, pal)
+    }
+}
+
 /// Per-channel midpoint in the palette's own (sRGB) values. Averaging in linear light would be
 /// physically closer to what the eye sees at a distance, but it brightens saturated mixes and washes
 /// out the colors the palette was designed for.

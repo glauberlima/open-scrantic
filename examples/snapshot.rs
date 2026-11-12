@@ -9,7 +9,7 @@ use std::path::Path;
 use open_scrantic::assets::ScreensaverData;
 use open_scrantic::engine::config::Config;
 use open_scrantic::engine::gfx::{HEIGHT, WIDTH};
-use open_scrantic::engine::{Clock, Engine, STEP_MS, TICK_MS};
+use open_scrantic::engine::{Clock, Engine};
 use open_scrantic::present;
 
 fn fail(msg: &str) -> ! {
@@ -84,22 +84,14 @@ fn main() {
     }
     let mut ticks = 0u64;
     for step in 1..=steps {
-        while (ticks + 1) * TICK_MS <= step * STEP_MS {
-            ticks += 1;
-            engine.tick();
-        }
-        engine.step(&clock);
+        engine.advance(&mut ticks, step, &clock);
         let sounds = engine.take_sounds();
         if !sounds.is_empty() {
             println!("step {step}: sounds {sounds:?}");
         }
         if step % every == 0 {
-            let px = &engine.frame().px;
-            let mut frame = if std::env::var_os("DEDITHER").is_some_and(|v| v == "1") {
-                present::dedither(px, &engine.palette)
-            } else {
-                present::plain(px, &engine.palette)
-            };
+            let dedither = std::env::var_os("DEDITHER").is_some_and(|v| v == "1");
+            let mut frame = present::rgb(&engine.frame().px, &engine.palette, dedither);
             let (mut w, mut h) = (WIDTH as usize, HEIGHT as usize);
             if let Ok(size) = std::env::var("SIZE") {
                 let (sw, sh) = size.split_once('x').unwrap_or_else(|| fail("SIZE must be WxH"));

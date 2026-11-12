@@ -1,8 +1,7 @@
 //! The island and its ambient animation (seg3 of the original): background composition,
 //! placement, shoreline waves, ocean whitecaps, clouds, raft and holiday decorations.
 
-use std::rc::Rc;
-
+use super::config::Config;
 use super::gfx::{Canvas, Clip, WIDTH};
 use super::rng::Rng;
 use crate::assets::Result;
@@ -48,12 +47,6 @@ impl Slot {
         self.counter -= 1;
         expired
     }
-}
-
-pub struct Options {
-    pub background: bool,
-    pub clouds: bool,
-    pub waves: bool,
 }
 
 /// Shoreline wave spots: (x, y, w, h, first sprite, phase counter index), relative to the origin.
@@ -114,9 +107,9 @@ pub struct Island {
     raft_stage: i32,
     caps: Vec<Slot>,
     cap_quota: [i32; 4],
-    background: Rc<Bmp>,
-    raft: Rc<Bmp>,
-    holiday_bmp: Rc<Bmp>,
+    background: Bmp,
+    raft: Bmp,
+    holiday_bmp: Bmp,
     cap_seqs: [Vec<u8>; 3],
 }
 
@@ -140,9 +133,9 @@ impl Island {
             raft_stage: 0,
             caps: Vec::new(),
             cap_quota: [0; 4],
-            background: Rc::new(archive.bmp("BACKGRND.BMP")?),
-            raft: Rc::new(archive.bmp("MRAFT.BMP")?),
-            holiday_bmp: Rc::new(archive.bmp("HOLIDAY.BMP")?),
+            background: archive.bmp("BACKGRND.BMP")?,
+            raft: archive.bmp("MRAFT.BMP")?,
+            holiday_bmp: archive.bmp("HOLIDAY.BMP")?,
             cap_seqs,
         })
     }
@@ -271,7 +264,8 @@ impl Island {
     }
 
     /// seg3:0136 – build the session background (into `bg`) and reset the ambient animation.
-    pub fn init(&mut self, archive: &Archive, bg: &mut Canvas, rng: &mut Rng, opts: &Options, max_day: i32) {
+    pub fn init(&mut self, archive: &Archive, bg: &mut Canvas, rng: &mut Rng, opts: &Config) {
+        let max_day = opts.num_days;
         if !opts.background || self.mode == Mode::NoIsland {
             bg.fill(5);
         } else {

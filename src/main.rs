@@ -62,7 +62,6 @@ struct App {
     /// Ends the run at the first sign of the user (screensaver build only; a preview has none).
     #[cfg(feature = "screensaver")]
     input: Option<saver::InputGuard>,
-    dedither: bool,
     /// Settings as last written to the INI, which a run with overrides must write back unchanged.
     saved: Config,
     /// F12 was pressed; the next redraw saves the frame it draws.
@@ -84,12 +83,7 @@ impl App {
         }
         while self.steps < due {
             self.steps += 1;
-            let virtual_ms = self.steps * STEP_MS;
-            while (self.ticks + 1) * TICK_MS <= virtual_ms {
-                self.ticks += 1;
-                self.engine.tick();
-            }
-            self.engine.step(&Clock::now());
+            self.engine.advance(&mut self.ticks, self.steps, &Clock::now());
             for id in self.engine.take_sounds() {
                 if let Some(a) = self.audio.as_mut().filter(|_| self.engine.config.sounds) {
                     a.play(self.engine.sound_bank(), id);
@@ -133,12 +127,13 @@ impl App {
         );
         let px = &self.engine.frame().px;
         let pal = &self.engine.palette;
-        let view = if self.dedither {
+        let raw = present::plain(px, pal);
+        let view = if self.engine.config.dedither {
             present::dedither(px, pal)
         } else {
-            present::plain(px, pal)
+            raw.clone()
         };
-        for (suffix, frame) in [("raw", present::plain(px, pal)), ("view", view)] {
+        for (suffix, frame) in [("raw", raw), ("view", view)] {
             let path = open_scrantic::app_dir().join(format!("{name}-{suffix}.png"));
             let png = present::png(WIDTH as usize, HEIGHT as usize, &frame);
             // `create_new` so that a file (or a link planted under that name) is never overwritten.
@@ -170,12 +165,11 @@ impl App {
         }
         let Ok(mut buf) = surface.buffer_mut() else { return };
         let (w, h) = (size.width as usize, size.height as usize);
-        let px = &self.engine.frame().px;
-        let rgb = if self.dedither {
-            present::dedither(px, &self.engine.palette)
-        } else {
-            present::plain(px, &self.engine.palette)
-        };
+        let rgb = present::rgb(
+            &self.engine.frame().px,
+            &self.engine.palette,
+            self.engine.config.dedither,
+        );
         present::scale(&rgb, &mut buf, w, h);
         let _ = buf.present();
     }
@@ -397,7 +391,6 @@ fn main() {
     let saved = Config::load();
     let run = opts.config(&saved);
     let audio = opts.audio(&run);
-    let dedither = run.dedither;
     let engine = Engine::new(data, run, seed).unwrap_or_else(|e| opts.fail(e));
     let event_loop = EventLoop::new().unwrap_or_else(|e| opts.fail(e));
     let mut app = App {
@@ -412,7 +405,6 @@ fn main() {
         target: opts.surface(),
         #[cfg(feature = "screensaver")]
         input: opts.input_guard(),
-        dedither,
         saved,
         screenshot: false,
         intro_drawn: false,
